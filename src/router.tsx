@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate, Outlet, createBrowserRouter } from 'react-router-dom';
+import { Navigate, Outlet, createHashRouter } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { LiveDashboardPage } from './pages/LiveDashboardPage';
 import { LoginPage } from './pages/LoginPage';
@@ -32,7 +32,7 @@ function RootRedirect() {
   return <Navigate to={token ? '/meetings' : '/login'} replace />;
 }
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   { path: '/', element: <RootRedirect /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
