@@ -10,6 +10,7 @@ export interface RegisterPayload {
   fullName: string;
   email: string;
   password: string;
+  organizationName: string;
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {

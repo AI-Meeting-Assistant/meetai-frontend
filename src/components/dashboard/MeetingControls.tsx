@@ -6,13 +6,13 @@ interface MeetingControlsProps {
 
 export function MeetingControls({ onStart, onEnd, isCapturing }: MeetingControlsProps) {
   return (
-    <section>
-      <button type="button" onClick={() => void onStart()} disabled={isCapturing}>
+    <div className="dashboard-controls-buttons">
+      <button type="button" className="btn-primary" onClick={() => void onStart()} disabled={isCapturing}>
         Start Meeting
       </button>
-      <button type="button" onClick={() => void onEnd()}>
+      <button type="button" className="btn-danger" onClick={() => void onEnd()}>
         End Meeting
       </button>
-    </section>
+    </div>
   );
 }

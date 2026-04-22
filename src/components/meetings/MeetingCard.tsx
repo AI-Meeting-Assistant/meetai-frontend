@@ -8,10 +8,14 @@ interface MeetingCardProps {
 
 export function MeetingCard({ meeting, onClick }: MeetingCardProps) {
   return (
-    <button type="button" onClick={() => onClick(meeting)}>
-      <h3>{meeting.title}</h3>
-      <p>{meeting.agenda}</p>
-      <StatusBadge status={meeting.status} />
+    <button type="button" className="card-clickable" onClick={() => onClick(meeting)}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+        <h3>{meeting.title}</h3>
+        <StatusBadge status={meeting.status} />
+      </div>
+      {meeting.agenda && (
+        <p style={{ marginTop: '6px', fontSize: 'var(--text-sm)' }}>{meeting.agenda}</p>
+      )}
     </button>
   );
 }

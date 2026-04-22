@@ -13,10 +13,14 @@ export function RegisterPage() {
   };
 
   return (
-    <main>
-      <h1>Register</h1>
-      <RegisterForm onSubmit={handleSubmit} />
-      <Link to="/login">Already have an account?</Link>
-    </main>
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1 className="auth-title">Create your account</h1>
+        <RegisterForm onSubmit={handleSubmit} />
+        <p className="auth-link">
+          Already have an account? <Link to="/login">Sign in</Link>
+        </p>
+      </div>
+    </div>
   );
 }

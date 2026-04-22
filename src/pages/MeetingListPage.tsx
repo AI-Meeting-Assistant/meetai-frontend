@@ -10,6 +10,7 @@ export function MeetingListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [showModal, setShowModal] = useState(false);
 
   const loadMeetings = async () => {
     const data = await meetingService.listMeetings();
@@ -34,12 +35,29 @@ export function MeetingListPage() {
   };
 
   return (
-    <main>
-      <h1>Meetings</h1>
-      {user?.role === 'MODERATOR' && <CreateMeetingModal onCreate={handleCreate} />}
-      {meetings.map((meeting) => (
-        <MeetingCard key={meeting.id} meeting={meeting} onClick={handleMeetingClick} />
-      ))}
+    <main className="page">
+      <div className="page-header">
+        <h1 style={{ margin: 0 }}>Meetings</h1>
+        {user?.role === 'MODERATOR' && (
+          <button type="button" className="btn-primary" onClick={() => setShowModal(true)}>
+            New Meeting
+          </button>
+        )}
+      </div>
+
+      {meetings.length === 0 ? (
+        <p className="empty-state">No meetings yet.</p>
+      ) : (
+        <div className="meeting-list">
+          {meetings.map((meeting) => (
+            <MeetingCard key={meeting.id} meeting={meeting} onClick={handleMeetingClick} />
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <CreateMeetingModal onCreate={handleCreate} onClose={() => setShowModal(false)} />
+      )}
     </main>
   );
 }

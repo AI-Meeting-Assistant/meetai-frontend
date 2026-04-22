@@ -26,9 +26,7 @@ export function LiveDashboardPage() {
   }, [id]);
 
   const handleStart = async () => {
-    if (!id) {
-      return;
-    }
+    if (!id) return;
     const result = await updateStatus(id, 'IN_PROGRESS');
     const ticket = result.streamTicket ?? null;
     const expiresAt = result.ticketExpiresAt ?? null;
@@ -39,9 +37,7 @@ export function LiveDashboardPage() {
   };
 
   const handleEnd = async () => {
-    if (!id) {
-      return;
-    }
+    if (!id) return;
     await updateStatus(id, 'COMPLETED');
     media.stop();
     setStreamTicket(null, null);
@@ -49,15 +45,34 @@ export function LiveDashboardPage() {
   };
 
   return (
-    <main>
-      <h1>Live Dashboard</h1>
-      <p>SSE: {connected ? 'connected' : 'disconnected'}</p>
-      <p>Ticket: {streamTicket ?? 'none'}</p>
-      {media.streamError && <p>{media.streamError}</p>}
-      <MeetingControls onStart={handleStart} onEnd={handleEnd} isCapturing={media.isCapturing} />
-      <LiveMetricPanel label="Focus" />
-      <LiveMetricPanel label="Emotion" />
-      <LiveMetricPanel label="Audio" />
+    <main className="page">
+      <div className="dashboard-controls">
+        <div className="dashboard-meta">
+          <h1 style={{ margin: 0 }}>Live Dashboard</h1>
+          <span className="status-label">
+            <span className={`status-dot ${connected ? 'status-dot-connected' : 'status-dot-disconnected'}`} />
+            {connected ? 'Connected' : 'Disconnected'}
+          </span>
+          {streamTicket && (
+            <span className="status-label">
+              <span className="status-dot status-dot-connected" />
+              Streaming
+            </span>
+          )}
+        </div>
+        <MeetingControls onStart={handleStart} onEnd={handleEnd} isCapturing={media.isCapturing} />
+      </div>
+
+      {media.streamError && (
+        <div className="stream-error">{media.streamError}</div>
+      )}
+
+      <div className="dashboard-grid">
+        <LiveMetricPanel label="Focus" />
+        <LiveMetricPanel label="Emotion" />
+        <LiveMetricPanel label="Audio" />
+      </div>
+
       <AlertFeed alerts={liveAlerts} />
     </main>
   );

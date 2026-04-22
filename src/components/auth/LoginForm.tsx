@@ -15,14 +15,29 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         void onSubmit(email, password);
       }}
     >
-      <input placeholder="Email" value={email} onChange={(event) => setEmail(event.target.value)} />
-      <input
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-      />
-      <button type="submit">Login</button>
+      <div className="form-group">
+        <label htmlFor="login-email">Email</label>
+        <input
+          id="login-email"
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+      </div>
+      <div className="form-group">
+        <label htmlFor="login-password">Password</label>
+        <input
+          id="login-password"
+          placeholder="••••••••"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+      </div>
+      <button type="submit" className="btn-primary auth-submit">
+        Login
+      </button>
     </form>
   );
 }

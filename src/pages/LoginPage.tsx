@@ -12,10 +12,14 @@ export function LoginPage() {
   };
 
   return (
-    <main>
-      <h1>Login</h1>
-      <LoginForm onSubmit={handleSubmit} />
-      <Link to="/register">Create account</Link>
-    </main>
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1 className="auth-title">Welcome back</h1>
+        <LoginForm onSubmit={handleSubmit} />
+        <p className="auth-link">
+          No account? <Link to="/register">Create one</Link>
+        </p>
+      </div>
+    </div>
   );
 }
