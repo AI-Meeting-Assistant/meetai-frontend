@@ -9,7 +9,12 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-electron
 dist-ssr
+*.exe
+*.app
+*.dmg
+release
 *.local
 .env
 
