@@ -13,8 +13,14 @@ export interface AuthUser {
 export interface Meeting {
   id: string;
   title: string;
-  agenda: string;
+  agenda: string | null;
   status: MeetingStatus;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  aiSummary?: string | null;
+  timelineResolutionMs?: number;
+  organizationId?: string;
+  userId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
