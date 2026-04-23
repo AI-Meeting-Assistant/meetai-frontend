@@ -165,6 +165,41 @@ pre {
   margin-bottom: var(--space-6);
 }
 
+.page-header-container {
+  margin-bottom: var(--space-6);
+}
+
+.header-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.header-row-bottom {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header-status-wrapper {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.stream-error-inline {
+  font-size: var(--text-sm);
+  margin-right: var(--space-2);
+  color: var(--color-danger);
+}
+
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
 .btn-primary,
 .btn-secondary,

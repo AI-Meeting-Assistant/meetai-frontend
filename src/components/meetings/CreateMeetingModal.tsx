@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 interface CreateMeetingModalProps {
-  onCreate: (title: string, agenda: string) => Promise<void>;
+  onCreate: (title: string, agenda?: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -11,7 +11,8 @@ export function CreateMeetingModal({ onCreate, onClose }: CreateMeetingModalProp
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    await onCreate(title, agenda);
+    if (!title.trim()) return;
+    await onCreate(title, agenda.trim() || undefined);
     onClose();
   };
 
