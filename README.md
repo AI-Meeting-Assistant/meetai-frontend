@@ -1,30 +1,47 @@
-# React + TypeScript + Vite
+# MeetAI Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI-powered meeting assistant built with Electron and React.
 
-Currently, two official plugins are available:
+## Installation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. **Install Node.js dependencies:**
+   ```bash
+   npm install
+   ```
 
-## Expanding the ESLint configuration
+2. **Run in development:**
+   ```bash
+   npm run dev
+   ```
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Building the Executable
 
-- Configure the top-level `parserOptions` property like this:
+To generate the standalone `.exe` file for Windows:
+```bash
+npm run build
+```
+The packaged output and installer will be located in the `release/<version>/` directory. (Note: `dist/` only contains the compiled React frontend assets).
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+---
+
+## Testing the Media Pipe
+
+A Python script is provided to simulate the ingestion backend and verify that screen/audio capture is working correctly.
+
+### 1. Requirements
+Install the required Python packages:
+```bash
+pip install fastapi uvicorn python-multipart
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+### 2. Run the Test Server
+```bash
+python test_media_server.py
+```
+The server starts at `http://localhost:8000`.
+
+### 3. Chunk Storage
+When you start a meeting and select a screen to share, the app will send 2-second media chunks to this server.
+- **Storage Path:** `./received_chunks/`
+- **Filename:** `meeting_{id}.webm`
+- Chunks are appended to the file in real-time, allowing you to play the resulting video after ending the meeting.
