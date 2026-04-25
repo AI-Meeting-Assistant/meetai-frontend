@@ -2,70 +2,80 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertFeed } from '../components/dashboard/AlertFeed';
 import { LiveMetricPanel } from '../components/dashboard/LiveMetricPanel';
-import { MeetingControls } from '../components/dashboard/MeetingControls';
+import { PageHeader } from '../components/common/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { useMeeting } from '../contexts/MeetingContext';
-import { useMediaStream } from '../hooks/useMediaStream';
 import { useSSE } from '../hooks/useSSE';
-import { updateStatus } from '../services/meeting.service';
+import { useMeetingDetails } from '../hooks/useMeetingDetails';
 
 export function LiveDashboardPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { token } = useAuth();
-  const { setActiveMeeting, setStreamTicket, resetMeetingState, liveAlerts, streamTicket } = useMeeting();
-  const media = useMediaStream();
+  const { 
+    setActiveMeeting, 
+    resetMeetingState, 
+    liveAlerts, 
+    streamTicket,
+    media,
+    endMeeting,
+    isEnding
+  } = useMeeting();
+  
   const { connected } = useSSE(id ?? null, token);
+  const { meeting } = useMeetingDetails(id ?? null);
 
   useEffect(() => {
     setActiveMeeting(id ?? null);
     return () => {
-      media.stop();
       resetMeetingState();
     };
-  }, [id]);
-
-  const handleStart = async () => {
-    if (!id) return;
-    const result = await updateStatus(id, 'IN_PROGRESS');
-    const ticket = result.streamTicket ?? null;
-    const expiresAt = result.ticketExpiresAt ?? null;
-    setStreamTicket(ticket, expiresAt);
-    if (ticket) {
-      await media.start(id, ticket);
-    }
-  };
+  }, [id, setActiveMeeting, resetMeetingState]);
 
   const handleEnd = async () => {
     if (!id) return;
-    await updateStatus(id, 'COMPLETED');
-    media.stop();
-    setStreamTicket(null, null);
-    navigate(`/meetings/${id}/analysis`);
+    try {
+      await endMeeting(id);
+      navigate(`/meetings/${id}/analysis`);
+    } catch (error) {
+      // Handled in context
+    }
   };
+
+  const statusLabel = (
+    <>
+      <span className="status-label">
+        <span className={`status-dot ${connected ? 'status-dot-connected' : 'status-dot-disconnected'}`} />
+        {connected ? 'Connected' : 'Disconnected'}
+      </span>
+      {streamTicket && (
+        <span className="status-label">
+          <span className="status-dot status-dot-connected" />
+          Streaming
+        </span>
+      )}
+    </>
+  );
 
   return (
     <main className="page">
-      <div className="dashboard-controls">
-        <div className="dashboard-meta">
-          <h1 style={{ margin: 0 }}>Live Dashboard</h1>
-          <span className="status-label">
-            <span className={`status-dot ${connected ? 'status-dot-connected' : 'status-dot-disconnected'}`} />
-            {connected ? 'Connected' : 'Disconnected'}
-          </span>
-          {streamTicket && (
-            <span className="status-label">
-              <span className="status-dot status-dot-connected" />
-              Streaming
-            </span>
-          )}
-        </div>
-        <MeetingControls onStart={handleStart} onEnd={handleEnd} isCapturing={media.isCapturing} />
-      </div>
-
-      {media.streamError && (
-        <div className="stream-error">{media.streamError}</div>
-      )}
+      <PageHeader
+        onBack={() => navigate('/meetings')}
+        backLabel="Back to Meetings"
+        title={meeting ? `${meeting.title} - Live Dashboard` : 'Live Dashboard'}
+        statusLabel={statusLabel}
+        actions={(
+          <button 
+            type="button" 
+            className="btn-danger" 
+            onClick={handleEnd} 
+            disabled={isEnding}
+          >
+            {isEnding ? 'Ending...' : 'End Meeting'}
+          </button>
+        )}
+        error={media.streamError}
+      />
 
       <div className="dashboard-grid">
         <LiveMetricPanel label="Focus" />

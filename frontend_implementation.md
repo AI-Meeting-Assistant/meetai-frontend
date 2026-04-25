@@ -106,14 +106,18 @@ interface MeetingContextValue {
   streamTicket: string | null;
   ticketExpiresAt: string | null;
   liveAlerts: MeetingAlert[];
+  media: ReturnType<typeof useMediaStream>;
   setActiveMeeting: (id: string | null) => void;
   setStreamTicket: (ticket: string | null, expiresAt: string | null) => void;
   pushAlert: (alert: MeetingAlert) => void;
+  resetMeetingState: () => void;
 }
 ```
-- `liveAlerts` is an append-only array populated by `useSSE`.
-- `streamTicket` and `ticketExpiresAt` are set when meeting status transitions to `IN_PROGRESS`.
-- Reset on meeting end.
+- Token persisted to `localStorage` on login, cleared on logout.
+- On app boot, read both `token` and serialized `user` from `localStorage`.
+- JWT payload is used only for auth/role context (`id`, `organizationId`, `role`); do not derive `fullName` or `email` from JWT.
+- `media` state is managed globally here to preserve hardware streams across navigation.
+- `resetMeetingState` explicitly calls `media.stop()` to release hardware locks.
 
 ---
 
@@ -177,13 +181,13 @@ useSSE(meetingId: string | null, token: string | null)
 ### `hooks/useMediaStream.ts`
 ```
 useMediaStream()
-  1. getDisplayMedia({ video: true, audio: true })   → screen video + system audio
-  2. getUserMedia({ audio: true })                   → moderator mic
+  1. getDisplayMedia({ video: { frameRate: 1 }, audio: true }) → 1 FPS screen video + system audio
+  2. getUserMedia({ audio: true })                             → moderator mic
   3. AudioContext: merge system audio + mic into one destination stream
   4. Combine: screen video track + merged audio track → single MediaStream
-  5. MediaRecorder emits 2-second chunks from combined stream
+  5. MediaRecorder emits 10-second chunks from combined stream
   6. For each chunk → POST to Python ingest with { meetingId, streamTicket, mediaChunk }
-  - Returns { start(meetingId, streamTicket), stop(), isCapturing: boolean }
+  - Returns { start(meetingId, streamTicket), stop(), isCapturing: boolean, streamError: string | null }
 ```
 
 ---
@@ -223,18 +227,18 @@ When a meeting card is clicked:
 
 ### LiveDashboardPage (MODERATOR only)
 - On mount: `setActiveMeeting(id)`, `useSSE(id, token)`
-- On "Start Meeting":
-  - `updateStatus(id, 'IN_PROGRESS')` returns `streamTicket` + `ticketExpiresAt`
-  - Save ticket in `MeetingContext`
-  - Start media upload: `useMediaStream().start(id, streamTicket)`
-- On unmount: `useMediaStream().stop()`, `setActiveMeeting(null)`
-- `LiveMetricPanel` × N: placeholder panels labeled "Focus", "Emotion", "Audio" (empty until Phase 3 AI pipeline delivers real data)
+- On unmount: `resetMeetingState()` (manages global cleanup)
 - `AlertFeed`: renders `liveAlerts` from MeetingContext
 - `MeetingControls`: 
-  - "End Meeting" → `updateStatus(id, 'COMPLETED')` → clear ticket → navigate to `/meetings/:id/analysis`
+  - Displays "End Meeting" button if `media.isCapturing` is true.
+  - "End Meeting" → `updateStatus(id, 'COMPLETED')` → `media.stop()` → clear ticket → navigate to `/meetings/:id/analysis`
 
 ### MeetingAnalysisPage (both roles)
 - On mount: `getMeetingAnalysis(id)`
+- MODERATOR only: "Start Meeting" button (visible if status !== COMPLETED)
+  - Transitions to `IN_PROGRESS` via `updateStatus`
+  - Prompts for media access via global `media.start()`
+  - Navigates to `/live` on success
 - `TimelineViewer`: list of timeline entries (offsetMs + raw payload JSON for now, charts deferred)
 - `AlertsLog`: full alerts list with severity + eventType + createdAt
 - `AiSummaryPanel`: shows `aiSummary` text, or "Summary not yet generated" if null
