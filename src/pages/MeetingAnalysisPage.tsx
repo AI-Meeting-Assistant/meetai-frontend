@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { AgendaPanel } from '../components/analysis/AgendaPanel'
 import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
 import { AlertsLog } from '../components/analysis/AlertsLog';
 import { ExportButton } from '../components/analysis/ExportButton';
@@ -94,6 +95,7 @@ export function MeetingAnalysisPage() {
       />
 
       <div className="analysis-full">
+        {meeting?.agenda && <AgendaPanel agenda={meeting.agenda} />}
         <AiSummaryPanel summary={analysis.aiSummary} />
       </div>
 
