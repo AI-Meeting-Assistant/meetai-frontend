@@ -460,6 +460,89 @@ textarea {
   margin-top: var(--space-1);
 }
 
+/* ─── App Header ─────────────────────────────────────────────────────────── */
+.app-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 50;
+}
+
+.profile-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+
+.profile-icon-btn:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-focus);
+}
+
+.profile-icon-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+}
+
+.icon-style {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  min-width: 160px;
+  z-index: 51;
+  overflow: hidden;
+}
+
+.dropdown-menu a,
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  text-decoration: none;
+}
+
+.dropdown-menu a:hover,
+.dropdown-menu button:hover {
+  background: var(--color-surface-alt);
+  text-decoration: none;
+}
+
+.dropdown-menu a:focus-visible,
+.dropdown-menu button:focus-visible {
+  background: var(--color-surface-alt);
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 /* ─── Modal ──────────────────────────────────────────────────────────────── */
 .modal-backdrop {
   position: fixed;

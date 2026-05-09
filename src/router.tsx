@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, Outlet, createHashRouter } from 'react-router-dom';
+import { AppHeader } from './components/common/AppHeader';
 import { useAuth } from './contexts/AuthContext';
 import { LiveDashboardPage } from './pages/LiveDashboardPage';
 import { LoginPage } from './pages/LoginPage';
@@ -7,6 +8,17 @@ import { MeetingAnalysisPage } from './pages/MeetingAnalysisPage';
 import { MeetingListPage } from './pages/MeetingListPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { SettingsPage } from './pages/SettingsPage';
+
+function AuthenticatedLayout() {
+  return (
+    <div className="app-layout">
+      <AppHeader />
+      <div className="app-content">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
 
 function PrivateRoute({ children }: { children?: ReactNode }) {
   const { token } = useAuth();
@@ -37,15 +49,19 @@ export const router = createHashRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   {
-    element: <PrivateRoute />,
+    element: (
+      <PrivateRoute>
+        <AuthenticatedLayout />
+      </PrivateRoute>
+    ),
     children: [
       { path: '/meetings', element: <MeetingListPage /> },
       { path: '/meetings/:id/analysis', element: <MeetingAnalysisPage /> },
       { path: '/settings', element: <SettingsPage /> },
+      {
+        element: <ModeratorRoute />,
+        children: [{ path: '/meetings/:id/live', element: <LiveDashboardPage /> }],
+      },
     ],
-  },
-  {
-    element: <ModeratorRoute />,
-    children: [{ path: '/meetings/:id/live', element: <LiveDashboardPage /> }],
   },
 ]);
