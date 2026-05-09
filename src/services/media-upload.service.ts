@@ -1,4 +1,7 @@
-const PYTHON_INGEST_BASE_URL = import.meta.env.VITE_PYTHON_INGEST_BASE_URL ?? 'http://localhost:8000';
+const PYTHON_INGEST_BASE_URL =
+  import.meta.env.VITE_PYTHON_INGEST_BASE_URL ?? 'http://localhost:8000';
+
+// ─── Custom errors ────────────────────────────────────────────────────────────
 
 export class StreamUnauthorizedError extends Error {
   constructor(message = 'Stream ticket unauthorized') {
@@ -7,19 +10,54 @@ export class StreamUnauthorizedError extends Error {
   }
 }
 
-interface UploadChunkPayload {
-  meetingId: string;
-  streamTicket: string;
-  mediaChunk: Blob;
+export class StreamBadRequestError extends Error {
+  constructor(message = 'Bad request — gateway rejected the chunk') {
+    super(message);
+    this.name = 'StreamBadRequestError';
+  }
 }
 
-export async function uploadChunk(payload: UploadChunkPayload): Promise<void> {
-  const formData = new FormData();
-  formData.append('meetingId', payload.meetingId);
-  formData.append('streamTicket', payload.streamTicket);
-  formData.append('mediaChunk', payload.mediaChunk, 'chunk.webm');
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-  const response = await fetch(`${PYTHON_INGEST_BASE_URL}/ingest/chunk`, {
+export interface UploadChunkPayload {
+  /** Active meeting UUID */
+  meetingId: string;
+  /** Redis stream ticket from Node POST /api/v1/meetings/:id/start */
+  streamTicket: string;
+  /**
+   * Start of this window relative to startedAt, in ms (client authoritative).
+   * First window = 0. Contiguous windows: 0, D, 2D, …
+   */
+  offsetMs: number;
+  /** Video bytes for [offsetMs, offsetMs + D) */
+  videoChunk: Blob;
+  /** Audio bytes for the same interval */
+  audioChunk: Blob;
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
+
+/**
+ * POSTs one 2-second window to the Python ingest gateway.
+ *
+ * Multipart fields sent:
+ *   meetingId   (string)
+ *   streamTicket (string)
+ *   offsetMs    (string → int, multiples of D=2000)
+ *   videoChunk  (file)
+ *   audioChunk  (file)
+ */
+export async function uploadChunk(payload: UploadChunkPayload): Promise<void> {
+  const { meetingId, streamTicket, offsetMs, videoChunk, audioChunk } = payload;
+
+  const formData = new FormData();
+  formData.append('meetingId', meetingId);
+  formData.append('streamTicket', streamTicket);
+  formData.append('offsetMs', String(offsetMs));
+  formData.append('videoChunk', videoChunk, `video_${offsetMs}.webm`);
+  formData.append('audioChunk', audioChunk, `audio_${offsetMs}.webm`);
+
+  const response = await fetch(`${PYTHON_INGEST_BASE_URL}/ingest`, {
     method: 'POST',
     body: formData,
   });
@@ -28,7 +66,13 @@ export async function uploadChunk(payload: UploadChunkPayload): Promise<void> {
     throw new StreamUnauthorizedError();
   }
 
+  if (response.status === 400) {
+    const body = await response.json().catch(() => null);
+    const msg = body?.error?.message ?? 'Gateway rejected chunk (400)';
+    throw new StreamBadRequestError(msg);
+  }
+
   if (!response.ok) {
-    throw new Error('Media chunk upload failed');
+    throw new Error(`Media chunk upload failed (HTTP ${response.status})`);
   }
 }

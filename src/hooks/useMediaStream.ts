@@ -1,5 +1,12 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
-import { StreamUnauthorizedError, uploadChunk } from '../services/media-upload.service';
+import {
+  StreamUnauthorizedError,
+  StreamBadRequestError,
+  uploadChunk,
+} from '../services/media-upload.service';
+
+/** Window duration sent to the gateway, in milliseconds. */
+const CHUNK_DURATION_MS = 2000;
 
 interface UseMediaStreamResult {
   prepare: () => Promise<void>;
@@ -13,23 +20,77 @@ export function useMediaStream(): UseMediaStreamResult {
   const [isCapturing, setIsCapturing] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
 
+  // ── Raw streams ──────────────────────────────────────────────────────────
   const screenStreamRef = useRef<MediaStream | null>(null);
-  const micStreamRef = useRef<MediaStream | null>(null);
-  const combinedStreamRef = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
+  const micStreamRef    = useRef<MediaStream | null>(null);
+
+  // ── Recorders ────────────────────────────────────────────────────────────
+  const videoRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioRecorderRef = useRef<MediaRecorder | null>(null);
+
+  // ── Audio mixing ─────────────────────────────────────────────────────────
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  const stop = useCallback(() => {
-    console.log('Stopping media stream and recording...');
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      recorderRef.current.stop();
-    }
-    recorderRef.current = null;
+  // ── Window tracking ──────────────────────────────────────────────────────
+  /** Running offset counter (client-authoritative). */
+  const offsetMsRef = useRef<number>(0);
 
-    [screenStreamRef, micStreamRef, combinedStreamRef].forEach(ref => {
-      ref.current?.getTracks().forEach(track => {
-        console.log(`Stopping track: ${track.kind}`);
-        track.stop();
+  /**
+   * Pending blobs keyed by offsetMs.
+   * Each window fires two ondataavailable events (video + audio).
+   * We hold the first arrival until the second arrives, then upload together.
+   */
+  const pendingRef = useRef<
+    Map<number, { video?: Blob; audio?: Blob }>
+  >(new Map());
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  /**
+   * Picks the best supported video MIME type for the video-only recorder.
+   */
+  function pickVideoMime(): string {
+    for (const t of [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm',
+    ]) {
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  }
+
+  /**
+   * Picks the best supported audio MIME type for the audio-only recorder.
+   */
+  function pickAudioMime(): string {
+    for (const t of [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+    ]) {
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  }
+
+  // ── stop ──────────────────────────────────────────────────────────────────
+
+  const stop = useCallback(() => {
+    console.log('[useMediaStream] Stopping...');
+
+    for (const recorder of [videoRecorderRef.current, audioRecorderRef.current]) {
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+    }
+    videoRecorderRef.current = null;
+    audioRecorderRef.current = null;
+
+    [screenStreamRef, micStreamRef].forEach(ref => {
+      ref.current?.getTracks().forEach(t => {
+        console.log(`[useMediaStream] Stopping track: ${t.kind}`);
+        t.stop();
       });
       ref.current = null;
     });
@@ -38,131 +99,191 @@ export function useMediaStream(): UseMediaStreamResult {
       audioContextRef.current.close().catch(() => undefined);
       audioContextRef.current = null;
     }
+
+    // Clear pending window state
+    offsetMsRef.current = 0;
+    pendingRef.current.clear();
+
     setIsCapturing(false);
   }, []);
 
+  // ── prepare ───────────────────────────────────────────────────────────────
+
   const prepare = useCallback(async () => {
-    console.log('Preparing media streams...');
+    console.log('[useMediaStream] Preparing media streams...');
     setStreamError(null);
+
     try {
-      console.log('Requesting screen capture...');
-      const constraints: DisplayMediaStreamOptions = {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate: { ideal: 10, max: 15 },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width:     { ideal: 1280 },
+          height:    { ideal: 720 },
         },
-        audio: true
-      };
-
-      const screenStream = await navigator.mediaDevices.getDisplayMedia(constraints);
-      console.log('Screen capture obtained.');
+        audio: true,
+      });
+      console.log('[useMediaStream] Screen capture obtained.');
       screenStreamRef.current = screenStream;
 
       try {
-        console.log('Requesting microphone access...');
         const micStream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true }
+          audio: { echoCancellation: true, noiseSuppression: true },
         });
-        console.log('Microphone access obtained.');
+        console.log('[useMediaStream] Microphone access obtained.');
         micStreamRef.current = micStream;
       } catch (micErr) {
-        console.warn('Microphone access denied or failed:', micErr);
+        console.warn('[useMediaStream] Microphone access denied or failed:', micErr);
       }
     } catch (err) {
-      console.error('Failed to prepare media stream:', err);
+      console.error('[useMediaStream] Failed to prepare media stream:', err);
       let msg = 'Media capture not supported.';
       if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') msg = 'Permission denied.';
-        else msg = err.message;
+        msg = err.name === 'NotAllowedError' ? 'Permission denied.' : err.message;
       }
       setStreamError(msg);
       throw err;
     }
   }, []);
 
-  const start = useCallback(async (meetingId: string, streamTicket: string) => {
-    console.log(`Starting recording for meeting: ${meetingId}`);
-    try {
-      if (!screenStreamRef.current) {
-        console.log('No screen stream found, preparing...');
-        await prepare();
-      }
+  // ── start ─────────────────────────────────────────────────────────────────
 
-      if (!screenStreamRef.current) {
-        throw new Error('Screen capture stream is missing after preparation.');
-      }
+  const start = useCallback(
+    async (meetingId: string, streamTicket: string) => {
+      console.log(`[useMediaStream] Starting recording for meeting: ${meetingId}`);
 
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-      const destination = audioContext.createMediaStreamDestination();
-
-      if (screenStreamRef.current.getAudioTracks().length > 0) {
-        console.log('Connecting screen audio to destination...');
-        audioContext.createMediaStreamSource(screenStreamRef.current).connect(destination);
-      }
-
-      if (micStreamRef.current && micStreamRef.current.getAudioTracks().length > 0) {
-        console.log('Connecting mic audio to destination...');
-        audioContext.createMediaStreamSource(micStreamRef.current).connect(destination);
-      }
-
-      const tracks: MediaStreamTrack[] = [];
-      const videoTrack = screenStreamRef.current.getVideoTracks()[0];
-      const mergedAudioTrack = destination.stream.getAudioTracks()[0];
-
-      if (videoTrack) tracks.push(videoTrack);
-      if (mergedAudioTrack) tracks.push(mergedAudioTrack);
-
-      if (tracks.length === 0) {
-        throw new Error('No audio or video tracks available to record.');
-      }
-
-      console.log(`Creating MediaStream with ${tracks.length} tracks.`);
-      const mergedStream = new MediaStream(tracks);
-      combinedStreamRef.current = mergedStream;
-
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-        ? 'video/webm;codecs=vp8,opus'
-        : 'video/webm';
-
-      console.log(`Starting MediaRecorder with mimeType: ${mimeType}`);
-      const recorder = new MediaRecorder(mergedStream, {
-        mimeType,
-        videoBitsPerSecond: 1000000
-      });
-      recorderRef.current = recorder;
-
-      recorder.ondataavailable = async (event) => {
-        if (event.data.size === 0) return;
-        console.log(`Media chunk available: ${event.data.size} bytes`);
-        try {
-          await uploadChunk({ meetingId, streamTicket, mediaChunk: event.data });
-        } catch (error) {
-          console.error('Failed to upload media chunk:', error);
-          if (error instanceof StreamUnauthorizedError) {
-            setStreamError('Stream ticket expired.');
-            stop();
-          }
+      try {
+        if (!screenStreamRef.current) {
+          console.log('[useMediaStream] No screen stream found, preparing...');
+          await prepare();
         }
-      };
+        if (!screenStreamRef.current) {
+          throw new Error('Screen capture stream is missing after preparation.');
+        }
 
-      recorder.start(2000);
-      setIsCapturing(true);
-      console.log('Recording started successfully.');
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-      setStreamError(err instanceof Error ? err.message : 'Failed to start recording.');
-      stop();
-      throw err;
-    }
-  }, [prepare, stop]);
+        // ── Build the mixed-audio stream ──────────────────────────────────
+        const audioContext = new AudioContext();
+        audioContextRef.current = audioContext;
+        const destination = audioContext.createMediaStreamDestination();
 
-  return useMemo(() => ({
-    prepare,
-    start,
-    stop,
-    isCapturing,
-    streamError
-  }), [prepare, start, stop, isCapturing, streamError]);
+        if (screenStreamRef.current.getAudioTracks().length > 0) {
+          audioContext
+            .createMediaStreamSource(screenStreamRef.current)
+            .connect(destination);
+        }
+        if (micStreamRef.current && micStreamRef.current.getAudioTracks().length > 0) {
+          audioContext
+            .createMediaStreamSource(micStreamRef.current)
+            .connect(destination);
+        }
+
+        const mergedAudioStream = destination.stream;
+        const videoOnlyStream  = new MediaStream(
+          screenStreamRef.current.getVideoTracks(),
+        );
+
+        // ── Shared upload handler ─────────────────────────────────────────
+        /**
+         * Called when either the video or audio recorder delivers a chunk.
+         * Buffers the blob until both sides are ready, then uploads.
+         */
+        const handleBlob = async (
+          kind: 'video' | 'audio',
+          windowOffset: number,
+          blob: Blob,
+        ) => {
+          if (blob.size === 0) return;
+
+          const map = pendingRef.current;
+          const entry = map.get(windowOffset) ?? {};
+          entry[kind] = blob;
+          map.set(windowOffset, entry);
+
+          if (!entry.video || !entry.audio) {
+            // Wait for the other half
+            return;
+          }
+
+          // Both halves arrived — upload and clean up
+          map.delete(windowOffset);
+          const { video: videoChunk, audio: audioChunk } = entry as Required<typeof entry>;
+
+          console.log(
+            `[useMediaStream] Uploading window offsetMs=${windowOffset} ` +
+            `(video=${videoChunk.size}B, audio=${audioChunk.size}B)`,
+          );
+
+          try {
+            await uploadChunk({
+              meetingId,
+              streamTicket,
+              offsetMs: windowOffset,
+              videoChunk,
+              audioChunk,
+            });
+          } catch (error) {
+            console.error('[useMediaStream] Failed to upload chunk:', error);
+            if (error instanceof StreamUnauthorizedError) {
+              setStreamError('Stream ticket expired.');
+              stop();
+            } else if (error instanceof StreamBadRequestError) {
+              setStreamError(`Gateway rejected window (offsetMs=${windowOffset}).`);
+            }
+          }
+        };
+
+        // ── Video recorder ────────────────────────────────────────────────
+        const videoMime = pickVideoMime();
+        const videoRecorder = new MediaRecorder(videoOnlyStream, {
+          mimeType: videoMime,
+          videoBitsPerSecond: 1_000_000,
+        });
+        videoRecorderRef.current = videoRecorder;
+
+        videoRecorder.ondataavailable = (event) => {
+          const offset = offsetMsRef.current;
+          // Advance offset after capturing it — audio fires in the same tick
+          offsetMsRef.current += CHUNK_DURATION_MS;
+          void handleBlob('video', offset, event.data);
+        };
+
+        // ── Audio recorder ────────────────────────────────────────────────
+        const audioMime = pickAudioMime();
+        const audioRecorder = new MediaRecorder(mergedAudioStream, {
+          mimeType: audioMime,
+        });
+        audioRecorderRef.current = audioRecorder;
+
+        audioRecorder.ondataavailable = (event) => {
+          // The offset was already captured (and advanced) by the video handler
+          const offset = offsetMsRef.current - CHUNK_DURATION_MS;
+          void handleBlob('audio', offset, event.data);
+        };
+
+        // ── Kick both recorders in step ───────────────────────────────────
+        offsetMsRef.current = 0;
+        pendingRef.current.clear();
+
+        videoRecorder.start(CHUNK_DURATION_MS);
+        audioRecorder.start(CHUNK_DURATION_MS);
+
+        setIsCapturing(true);
+        console.log('[useMediaStream] Recording started successfully.');
+      } catch (err) {
+        console.error('[useMediaStream] Failed to start recording:', err);
+        setStreamError(
+          err instanceof Error ? err.message : 'Failed to start recording.',
+        );
+        stop();
+        throw err;
+      }
+    },
+    [prepare, stop],
+  );
+
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  return useMemo(
+    () => ({ prepare, start, stop, isCapturing, streamError }),
+    [prepare, start, stop, isCapturing, streamError],
+  );
 }
