@@ -27,10 +27,13 @@ export function LiveDashboardPage() {
 
   useEffect(() => {
     setActiveMeeting(id ?? null);
+    
     return () => {
-      resetMeetingState();
+      setActiveMeeting(null);
+      // Removed resetMeetingState() from here to avoid React 18 Strict Mode instantly killing the meeting on mount!
     };
-  }, [id, setActiveMeeting, resetMeetingState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleEnd = async () => {
     if (!id) return;
@@ -60,7 +63,10 @@ export function LiveDashboardPage() {
   return (
     <main className="page">
       <PageHeader
-        onBack={() => navigate('/meetings')}
+        onBack={() => {
+          resetMeetingState();
+          navigate('/meetings');
+        }}
         backLabel="Back to Meetings"
         title={meeting ? `${meeting.title} - Live Dashboard` : 'Live Dashboard'}
         statusLabel={statusLabel}

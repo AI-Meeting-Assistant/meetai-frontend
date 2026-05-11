@@ -44,8 +44,8 @@ export interface UploadChunkPayload {
  *   meetingId   (string)
  *   streamTicket (string)
  *   offsetMs    (string → int, multiples of D=2000)
- *   videoChunk  (file)
- *   audioChunk  (file)
+ *   videoChunk  (webm file)
+ *   audioChunk  (webm file)
  */
 export async function uploadChunk(payload: UploadChunkPayload): Promise<void> {
   const { meetingId, streamTicket, offsetMs, videoChunk, audioChunk } = payload;

@@ -47,14 +47,15 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setActiveMeetingState(id);
   }, []);
 
+  const stopMedia = media.stop;
   const resetMeetingState = useCallback(() => {
     setActiveMeetingState(null);
     setTicket(null);
     setTicketExpiresAt(null);
     setLiveAlerts([]);
     setStartError(null);
-    media.stop();
-  }, [media]);
+    stopMedia();
+  }, [stopMedia]);
 
   const startMeeting = useCallback(async (id: string) => {
     setIsStarting(true);

@@ -32,8 +32,10 @@ export function useMediaStream(): UseMediaStreamResult {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // ── Window tracking ──────────────────────────────────────────────────────
-  /** Running offset counter (client-authoritative). */
-  const offsetMsRef = useRef<number>(0);
+  /** Running offset counters (client-authoritative). */
+  const videoOffsetRef = useRef<number>(0);
+  const audioOffsetRef = useRef<number>(0);
+  const mediaChunkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * Pending blobs keyed by offsetMs.
@@ -100,8 +102,14 @@ export function useMediaStream(): UseMediaStreamResult {
       audioContextRef.current = null;
     }
 
+    if (mediaChunkIntervalRef.current !== null) {
+      clearInterval(mediaChunkIntervalRef.current);
+      mediaChunkIntervalRef.current = null;
+    }
+
     // Clear pending window state
-    offsetMsRef.current = 0;
+    videoOffsetRef.current = 0;
+    audioOffsetRef.current = 0;
     pendingRef.current.clear();
 
     setIsCapturing(false);
@@ -191,8 +199,8 @@ export function useMediaStream(): UseMediaStreamResult {
           windowOffset: number,
           blob: Blob,
         ) => {
-          if (blob.size === 0) return;
-
+          console.log(`[useMediaStream] Received ${kind} blob: size=${blob.size} bytes at offset ${windowOffset}`);
+          
           const map = pendingRef.current;
           const entry = map.get(windowOffset) ?? {};
           entry[kind] = blob;
@@ -240,9 +248,8 @@ export function useMediaStream(): UseMediaStreamResult {
         videoRecorderRef.current = videoRecorder;
 
         videoRecorder.ondataavailable = (event) => {
-          const offset = offsetMsRef.current;
-          // Advance offset after capturing it — audio fires in the same tick
-          offsetMsRef.current += CHUNK_DURATION_MS;
+          const offset = videoOffsetRef.current;
+          videoOffsetRef.current += CHUNK_DURATION_MS;
           void handleBlob('video', offset, event.data);
         };
 
@@ -254,17 +261,26 @@ export function useMediaStream(): UseMediaStreamResult {
         audioRecorderRef.current = audioRecorder;
 
         audioRecorder.ondataavailable = (event) => {
-          // The offset was already captured (and advanced) by the video handler
-          const offset = offsetMsRef.current - CHUNK_DURATION_MS;
+          const offset = audioOffsetRef.current;
+          audioOffsetRef.current += CHUNK_DURATION_MS;
           void handleBlob('audio', offset, event.data);
         };
 
         // ── Kick both recorders in step ───────────────────────────────────
-        offsetMsRef.current = 0;
+        videoOffsetRef.current = 0;
+        audioOffsetRef.current = 0;
         pendingRef.current.clear();
 
-        videoRecorder.start(CHUNK_DURATION_MS);
-        audioRecorder.start(CHUNK_DURATION_MS);
+        // Start without timeslice; we will manually pull data synchronously
+        videoRecorder.start();
+        audioRecorder.start();
+
+        // Explicitly request data to bypass browser bugs where static screens don't emit chunks
+        // and guarantee that audio and video offsets stay perfectly locked together.
+        mediaChunkIntervalRef.current = setInterval(() => {
+          if (videoRecorder.state === 'recording') videoRecorder.requestData();
+          if (audioRecorder.state === 'recording') audioRecorder.requestData();
+        }, CHUNK_DURATION_MS);
 
         setIsCapturing(true);
         console.log('[useMediaStream] Recording started successfully.');
