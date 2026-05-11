@@ -6,6 +6,12 @@ import { useAuth } from '../contexts/AuthContext';
 import * as meetingService from '../services/meeting.service';
 import type { Meeting } from '../types';
 
+const STATUS_PRIORITY = {
+  'IN_PROGRESS': 1,
+  'SCHEDULED': 2,
+  'COMPLETED': 3
+};
+
 export function MeetingListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -14,6 +20,11 @@ export function MeetingListPage() {
 
   const loadMeetings = async () => {
     const data = await meetingService.listMeetings();
+    data.sort((a, b) => {
+      const priorityA = STATUS_PRIORITY[a.status] || Infinity;
+      const priorityB = STATUS_PRIORITY[b.status] || Infinity;
+      return priorityA - priorityB;
+    });
     setMeetings(data);
   };
 
