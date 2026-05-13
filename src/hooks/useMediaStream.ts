@@ -35,7 +35,6 @@ export function useMediaStream(): UseMediaStreamResult {
   /** Running offset counters (client-authoritative). */
   const videoOffsetRef = useRef<number>(0);
   const audioOffsetRef = useRef<number>(0);
-  const mediaChunkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * Pending blobs keyed by offsetMs.
@@ -100,11 +99,6 @@ export function useMediaStream(): UseMediaStreamResult {
     if (audioContextRef.current) {
       audioContextRef.current.close().catch(() => undefined);
       audioContextRef.current = null;
-    }
-
-    if (mediaChunkIntervalRef.current !== null) {
-      clearInterval(mediaChunkIntervalRef.current);
-      mediaChunkIntervalRef.current = null;
     }
 
     // Clear pending window state
@@ -200,7 +194,7 @@ export function useMediaStream(): UseMediaStreamResult {
           blob: Blob,
         ) => {
           console.log(`[useMediaStream] Received ${kind} blob: size=${blob.size} bytes at offset ${windowOffset}`);
-          
+
           const map = pendingRef.current;
           const entry = map.get(windowOffset) ?? {};
           entry[kind] = blob;
@@ -248,9 +242,14 @@ export function useMediaStream(): UseMediaStreamResult {
         videoRecorderRef.current = videoRecorder;
 
         videoRecorder.ondataavailable = (event) => {
+          const blob = event.data;
+          if (blob.size === 0) {
+            console.warn('[useMediaStream] Ignoring empty video blob (no offset advance)');
+            return;
+          }
           const offset = videoOffsetRef.current;
           videoOffsetRef.current += CHUNK_DURATION_MS;
-          void handleBlob('video', offset, event.data);
+          void handleBlob('video', offset, blob);
         };
 
         // ── Audio recorder ────────────────────────────────────────────────
@@ -261,9 +260,14 @@ export function useMediaStream(): UseMediaStreamResult {
         audioRecorderRef.current = audioRecorder;
 
         audioRecorder.ondataavailable = (event) => {
+          const blob = event.data;
+          if (blob.size === 0) {
+            console.warn('[useMediaStream] Ignoring empty audio blob (no offset advance)');
+            return;
+          }
           const offset = audioOffsetRef.current;
           audioOffsetRef.current += CHUNK_DURATION_MS;
-          void handleBlob('audio', offset, event.data);
+          void handleBlob('audio', offset, blob);
         };
 
         // ── Kick both recorders in step ───────────────────────────────────
@@ -271,16 +275,11 @@ export function useMediaStream(): UseMediaStreamResult {
         audioOffsetRef.current = 0;
         pendingRef.current.clear();
 
-        // Start without timeslice; we will manually pull data synchronously
-        videoRecorder.start();
-        audioRecorder.start();
-
-        // Explicitly request data to bypass browser bugs where static screens don't emit chunks
-        // and guarantee that audio and video offsets stay perfectly locked together.
-        mediaChunkIntervalRef.current = setInterval(() => {
-          if (videoRecorder.state === 'recording') videoRecorder.requestData();
-          if (audioRecorder.state === 'recording') audioRecorder.requestData();
-        }, CHUNK_DURATION_MS);
+        // Timeslice matches gateway MEDIA_CHUNK_DURATION_MS so each Blob is typically a
+        // standalone WebM segment (PyAV can av.open per POST). Avoid requestData()+start()
+        // without timeslice — that yields Matroska continuation fragments and decode errors.
+        videoRecorder.start(CHUNK_DURATION_MS);
+        audioRecorder.start(CHUNK_DURATION_MS);
 
         setIsCapturing(true);
         console.log('[useMediaStream] Recording started successfully.');

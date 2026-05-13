@@ -184,9 +184,9 @@ useMediaStream()
   1. getDisplayMedia({ video: { frameRate: 1 }, audio: true }) → 1 FPS screen video + system audio
   2. getUserMedia({ audio: true })                             → moderator mic
   3. AudioContext: merge system audio + mic into one destination stream
-  4. Combine: screen video track + merged audio track → single MediaStream
-  5. MediaRecorder emits 10-second chunks from combined stream
-  6. For each chunk → POST to Python ingest with { meetingId, streamTicket, mediaChunk }
+  4. **Dual `MediaRecorder`**: video-only stream (VP9/VP8 WebM) + merged-audio stream (Opus WebM/Ogg)
+  5. Each recorder uses **`start(2000)` timeslice** (same as `MEDIA_CHUNK_DURATION_MS`) so each `ondataavailable` Blob is typically a **standalone** WebM segment decodable by PyAV on the gateway
+  6. Pair video + audio blobs per `offsetMs` → `uploadChunk` POST (`videoChunk`, `audioChunk`) to Python ingest
   - Returns { start(meetingId, streamTicket), stop(), isCapturing: boolean, streamError: string | null }
 ```
 
@@ -263,7 +263,7 @@ When a meeting card is clicked:
 10. **`useSSE`** hook
 11. **`media-upload.service.ts`** — Python ingest upload + ticket-aware error handling
 12. **LiveDashboardPage** — `AlertFeed` + `MeetingControls` + placeholder metric panels
-13. **`useMediaStream`** hook — screen capture + audio merge + HTTP chunk upload
+13. **`useMediaStream`** hook — screen capture + merged mic/system audio + dual `MediaRecorder` with **2s timeslice** + paired HTTP upload to Python ingest
 14. **SettingsPage** — placeholder
 15. **Electron wiring** — `main.ts` creates `BrowserWindow`, loads the Vite dev server in dev mode
 16. **ExportButton** — enable when backend real PDF export is ready
