@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useMediaStream } from '../hooks/useMediaStream';
 import type { MeetingAlert } from '../types';
@@ -31,8 +31,35 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [isStarting, setIsStarting] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [timelineResolutionMs, setTimelineResolutionMs] = useState<number>(2000);
   
-  const media = useMediaStream();
+  const media = useMediaStream(timelineResolutionMs);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadMeetingResolution = async () => {
+      if (!activeMeetingId) {
+        setTimelineResolutionMs(2000);
+        return;
+      }
+
+      try {
+        const data = await meetingService.getMeetingAnalysis(activeMeetingId);
+        if (isActive) {
+          setTimelineResolutionMs(data.meeting.timelineResolutionMs ?? 2000);
+        }
+      } catch (error) {
+        console.warn('Failed to load meeting resolution:', error);
+      }
+    };
+
+    void loadMeetingResolution();
+
+    return () => {
+      isActive = false;
+    };
+  }, [activeMeetingId]);
 
   const pushAlert = useCallback((alert: MeetingAlert) => {
     setLiveAlerts((current) => [...current, alert]);
@@ -54,6 +81,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setTicketExpiresAt(null);
     setLiveAlerts([]);
     setStartError(null);
+    setTimelineResolutionMs(0);
     stopMedia();
   }, [stopMedia]);
 

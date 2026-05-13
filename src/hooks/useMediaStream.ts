@@ -1,12 +1,9 @@
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import {
   StreamUnauthorizedError,
   StreamBadRequestError,
   uploadChunk,
 } from '../services/media-upload.service';
-
-/** Window duration sent to the gateway, in milliseconds. */
-const CHUNK_DURATION_MS = 2000;
 
 interface UseMediaStreamResult {
   prepare: () => Promise<void>;
@@ -16,9 +13,15 @@ interface UseMediaStreamResult {
   streamError: string | null;
 }
 
-export function useMediaStream(): UseMediaStreamResult {
+export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
   const [isCapturing, setIsCapturing] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
+
+  const chunkDurationRef = useRef<number>(chunkDurationMs);
+
+  useEffect(() => {
+    chunkDurationRef.current = chunkDurationMs;
+  }, [chunkDurationMs]);
 
   // ── Raw streams ──────────────────────────────────────────────────────────
   const screenStreamRef = useRef<MediaStream | null>(null);
@@ -235,6 +238,8 @@ export function useMediaStream(): UseMediaStreamResult {
 
         // ── Video recorder ────────────────────────────────────────────────
         const videoMime = pickVideoMime();
+        const effectiveChunkDurationMs = chunkDurationRef.current;
+
         const videoRecorder = new MediaRecorder(videoOnlyStream, {
           mimeType: videoMime,
           videoBitsPerSecond: 1_000_000,
@@ -248,7 +253,7 @@ export function useMediaStream(): UseMediaStreamResult {
             return;
           }
           const offset = videoOffsetRef.current;
-          videoOffsetRef.current += CHUNK_DURATION_MS;
+          videoOffsetRef.current += effectiveChunkDurationMs;
           void handleBlob('video', offset, blob);
         };
 
@@ -266,7 +271,7 @@ export function useMediaStream(): UseMediaStreamResult {
             return;
           }
           const offset = audioOffsetRef.current;
-          audioOffsetRef.current += CHUNK_DURATION_MS;
+          audioOffsetRef.current += effectiveChunkDurationMs;
           void handleBlob('audio', offset, blob);
         };
 
@@ -278,8 +283,8 @@ export function useMediaStream(): UseMediaStreamResult {
         // Timeslice matches gateway MEDIA_CHUNK_DURATION_MS so each Blob is typically a
         // standalone WebM segment (PyAV can av.open per POST). Avoid requestData()+start()
         // without timeslice — that yields Matroska continuation fragments and decode errors.
-        videoRecorder.start(CHUNK_DURATION_MS);
-        audioRecorder.start(CHUNK_DURATION_MS);
+        videoRecorder.start(effectiveChunkDurationMs);
+        audioRecorder.start(effectiveChunkDurationMs);
 
         setIsCapturing(true);
         console.log('[useMediaStream] Recording started successfully.');
