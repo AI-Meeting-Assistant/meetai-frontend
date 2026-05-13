@@ -1,18 +1,24 @@
 import { useState } from 'react';
 
 interface CreateMeetingModalProps {
-  onCreate: (title: string, agenda?: string) => Promise<void>;
+  onCreate: (title: string, agenda?: string, timelineResolutionMs?: number) => Promise<void>;
   onClose: () => void;
 }
 
 export function CreateMeetingModal({ onCreate, onClose }: CreateMeetingModalProps) {
   const [title, setTitle] = useState('');
   const [agenda, setAgenda] = useState('');
+  const [timelineResolutionMs, setTimelineResolutionMs] = useState('');
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!title.trim()) return;
-    await onCreate(title, agenda.trim() || undefined);
+    const trimmedResolution = timelineResolutionMs.trim();
+    const parsedResolution = trimmedResolution ? Number(trimmedResolution) : Number.NaN;
+    const resolutionValue = Number.isFinite(parsedResolution) && parsedResolution > 0
+      ? parsedResolution
+      : undefined;
+    await onCreate(title, agenda.trim() || undefined, resolutionValue);
     onClose();
   };
 
@@ -40,6 +46,17 @@ export function CreateMeetingModal({ onCreate, onClose }: CreateMeetingModalProp
               placeholder="Topics to cover…"
               value={agenda}
               onChange={(event) => setAgenda(event.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="meeting-timeline-resolution">Timeline resolution (ms)</label>
+            <input
+              id="meeting-timeline-resolution"
+              type="number"
+              min="1"
+              placeholder="2000"
+              value={timelineResolutionMs}
+              onChange={(event) => setTimelineResolutionMs(event.target.value)}
             />
           </div>
           <div className="modal-footer">

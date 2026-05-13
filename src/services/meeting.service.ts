@@ -8,6 +8,7 @@ import type { Meeting, MeetingAnalysis } from '../types';
 export interface CreateMeetingPayload {
   title: string;
   agenda?: string | null;
+  timelineResolutionMs?: number;
 }
 
 export interface UpdateMeetingPayload {

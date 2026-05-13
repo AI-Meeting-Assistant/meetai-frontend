@@ -32,8 +32,8 @@ export function MeetingListPage() {
     void loadMeetings();
   }, []);
 
-  const handleCreate = async (title: string, agenda?: string) => {
-    await meetingService.createMeeting({ title, agenda });
+  const handleCreate = async (title: string, agenda?: string, timelineResolutionMs?: number) => {
+    await meetingService.createMeeting({ title, agenda, timelineResolutionMs });
     await loadMeetings();
   };
 
