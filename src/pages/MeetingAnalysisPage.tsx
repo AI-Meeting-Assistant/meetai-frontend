@@ -50,6 +50,19 @@ export function MeetingAnalysisPage() {
 
   const isModerator = user?.role === 'MODERATOR';
   const status = meeting?.status;
+  const timelineResolutionLabel =
+    typeof meeting?.timelineResolutionMs === 'number'
+      ? `Resolution: ${meeting.timelineResolutionMs} ms`
+      : 'Resolution: not set';
+
+  const statusLabel = status ? (
+    <>
+      <StatusBadge status={status} />
+      <span className="status-label">{timelineResolutionLabel}</span>
+    </>
+  ) : (
+    <span className="status-label">{timelineResolutionLabel}</span>
+  );
 
   const headerActions = (
     <>
@@ -89,7 +102,7 @@ export function MeetingAnalysisPage() {
         onBack={() => navigate('/meetings')}
         backLabel="Back to Meetings"
         title={meeting?.title || 'Meeting Analysis'}
-        statusLabel={status ? <StatusBadge status={status} /> : null}
+        statusLabel={statusLabel}
         actions={headerActions}
         error={startError}
       />
@@ -106,4 +119,3 @@ export function MeetingAnalysisPage() {
     </main>
   );
 }
-
