@@ -4,6 +4,38 @@ import { useMediaStream } from '../hooks/useMediaStream';
 import type { MeetingAlert } from '../types';
 import * as meetingService from '../services/meeting.service';
 
+const DEFAULT_TIMELINE_RESOLUTION_MS = 2000;
+
+function getElapsedOffsetMs(startedAt: string | null | undefined, resolutionMs: number): number {
+  if (!startedAt) {
+    return 0;
+  }
+
+  const startedAtMs = Date.parse(startedAt);
+  if (!Number.isFinite(startedAtMs)) {
+    return 0;
+  }
+
+  const elapsedMs = Date.now() - startedAtMs;
+  if (elapsedMs <= 0) {
+    return 0;
+  }
+
+  return Math.floor(elapsedMs / resolutionMs) * resolutionMs;
+}
+
+function getTimelineNextOffsetMs(
+  timeline: Array<{ offsetMs: number }>,
+  resolutionMs: number,
+): number {
+  if (timeline.length === 0) {
+    return 0;
+  }
+
+  const maxOffsetMs = Math.max(...timeline.map((entry) => entry.offsetMs));
+  return maxOffsetMs + resolutionMs;
+}
+
 interface MeetingContextValue {
   activeMeetingId: string | null;
   streamTicket: string | null;
@@ -31,7 +63,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [isStarting, setIsStarting] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [timelineResolutionMs, setTimelineResolutionMs] = useState<number>(2000);
+  const [timelineResolutionMs, setTimelineResolutionMs] = useState<number>(DEFAULT_TIMELINE_RESOLUTION_MS);
   
   const media = useMediaStream(timelineResolutionMs);
 
@@ -40,14 +72,14 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
 
     const loadMeetingResolution = async () => {
       if (!activeMeetingId) {
-        setTimelineResolutionMs(2000);
+        setTimelineResolutionMs(DEFAULT_TIMELINE_RESOLUTION_MS);
         return;
       }
 
       try {
         const data = await meetingService.getMeetingAnalysis(activeMeetingId);
         if (isActive) {
-          setTimelineResolutionMs(data.meeting.timelineResolutionMs ?? 2000);
+          setTimelineResolutionMs(data.meeting.timelineResolutionMs ?? DEFAULT_TIMELINE_RESOLUTION_MS);
         }
       } catch (error) {
         console.warn('Failed to load meeting resolution:', error);
@@ -81,7 +113,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setTicketExpiresAt(null);
     setLiveAlerts([]);
     setStartError(null);
-    setTimelineResolutionMs(0);
+    setTimelineResolutionMs(DEFAULT_TIMELINE_RESOLUTION_MS);
     stopMedia();
   }, [stopMedia]);
 
@@ -94,11 +126,22 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
 
       // 2. Only if capture is prepared, start the meeting on the backend
       const { streamTicket, ticketExpiresAt } = await meetingService.startMeeting(id);
+      const analysis = await meetingService.getMeetingAnalysis(id);
+      const effectiveResolutionMs =
+        analysis.meeting.timelineResolutionMs ?? timelineResolutionMs;
+      const initialOffsetMs = Math.max(
+        getElapsedOffsetMs(analysis.meeting.startedAt, effectiveResolutionMs),
+        getTimelineNextOffsetMs(analysis.timeline, effectiveResolutionMs),
+      );
 
       // 3. Start the actual recording/streaming
+      setTimelineResolutionMs(effectiveResolutionMs);
       setTicket(streamTicket);
       setTicketExpiresAt(ticketExpiresAt);
-      await media.start(id, streamTicket);
+      await media.start(id, streamTicket, {
+        chunkDurationMs: effectiveResolutionMs,
+        initialOffsetMs,
+      });
     } catch (error) {
       console.error('Failed to start meeting:', error);
       const msg = error instanceof Error ? error.message : 'Failed to start meeting.';
@@ -108,7 +151,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsStarting(false);
     }
-  }, [media]);
+  }, [media, timelineResolutionMs]);
 
   const endMeeting = useCallback(async (id: string) => {
     if (isEnding) return;

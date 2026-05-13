@@ -38,12 +38,12 @@ export interface UploadChunkPayload {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 /**
- * POSTs one 2-second window to the Python ingest gateway.
+ * POSTs one media window to the Python ingest gateway.
  *
  * Multipart fields sent:
  *   meetingId   (string)
  *   streamTicket (string)
- *   offsetMs    (string → int, multiples of D=2000)
+ *   offsetMs    (string → int, multiples of meeting timeline resolution)
  *   videoChunk  (webm file)
  *   audioChunk  (webm file)
  */

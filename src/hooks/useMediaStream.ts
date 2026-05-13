@@ -7,7 +7,14 @@ import {
 
 interface UseMediaStreamResult {
   prepare: () => Promise<void>;
-  start: (meetingId: string, streamTicket: string) => Promise<void>;
+  start: (
+    meetingId: string,
+    streamTicket: string,
+    options?: {
+      chunkDurationMs?: number;
+      initialOffsetMs?: number;
+    },
+  ) => Promise<void>;
   stop: () => void;
   isCapturing: boolean;
   streamError: string | null;
@@ -153,7 +160,14 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
   // ── start ─────────────────────────────────────────────────────────────────
 
   const start = useCallback(
-    async (meetingId: string, streamTicket: string) => {
+    async (
+      meetingId: string,
+      streamTicket: string,
+      options?: {
+        chunkDurationMs?: number;
+        initialOffsetMs?: number;
+      },
+    ) => {
       console.log(`[useMediaStream] Starting recording for meeting: ${meetingId}`);
 
       try {
@@ -238,7 +252,15 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
 
         // ── Video recorder ────────────────────────────────────────────────
         const videoMime = pickVideoMime();
-        const effectiveChunkDurationMs = chunkDurationRef.current;
+        const effectiveChunkDurationMs = options?.chunkDurationMs ?? chunkDurationRef.current;
+        const initialOffsetMs = options?.initialOffsetMs ?? 0;
+
+        if (!Number.isFinite(effectiveChunkDurationMs) || effectiveChunkDurationMs <= 0) {
+          throw new Error(`Invalid chunk duration: ${String(effectiveChunkDurationMs)}`);
+        }
+        if (!Number.isFinite(initialOffsetMs) || initialOffsetMs < 0) {
+          throw new Error(`Invalid initial offset: ${String(initialOffsetMs)}`);
+        }
 
         const videoRecorder = new MediaRecorder(videoOnlyStream, {
           mimeType: videoMime,
@@ -276,8 +298,8 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
         };
 
         // ── Kick both recorders in step ───────────────────────────────────
-        videoOffsetRef.current = 0;
-        audioOffsetRef.current = 0;
+        videoOffsetRef.current = initialOffsetMs;
+        audioOffsetRef.current = initialOffsetMs;
         pendingRef.current.clear();
 
         // Timeslice matches gateway MEDIA_CHUNK_DURATION_MS so each Blob is typically a
