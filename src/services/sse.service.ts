@@ -15,7 +15,7 @@ export function disconnectAlertsStream(): void {
   }
 }
 
-export function onAlert(callback: (rawMessage: string) => void): void {
+export function onMessage(callback: (rawMessage: string) => void): void {
   if (!alertsSource) {
     return;
   }

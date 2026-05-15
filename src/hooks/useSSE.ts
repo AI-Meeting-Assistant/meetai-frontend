@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { connectAlertsStream, disconnectAlertsStream, onAlert } from '../services/sse.service';
+import { connectAlertsStream, disconnectAlertsStream, onMessage } from '../services/sse.service';
 import { useMeeting } from '../contexts/MeetingContext';
-import type { MeetingAlert } from '../types';
+import type { SseEventType, LiveAlert, FusedDataPayload } from '../types';
 
 interface UseSSEResult {
   connected: boolean;
@@ -9,7 +9,7 @@ interface UseSSEResult {
 
 export function useSSE(meetingId: string | null, token: string | null): UseSSEResult {
   const [connected, setConnected] = useState(false);
-  const { pushAlert } = useMeeting();
+  const { pushLiveAlert, pushFusedData } = useMeeting();
 
   useEffect(() => {
     if (!meetingId || !token) {
@@ -19,11 +19,37 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
     }
 
     const source = connectAlertsStream(meetingId, token);
-    setConnected(true);
 
-    onAlert((raw) => {
-      const parsed = JSON.parse(raw) as MeetingAlert;
-      pushAlert(parsed);
+    onMessage((raw) => {
+      let parsed: { type: SseEventType } & Record<string, unknown>;
+      try {
+        parsed = JSON.parse(raw) as { type: SseEventType } & Record<string, unknown>;
+      } catch {
+        return;
+      }
+
+      switch (parsed.type) {
+        case 'CONNECTED':
+          setConnected(true);
+          break;
+
+        case 'FUSED_DATA':
+          pushFusedData(parsed as unknown as FusedDataPayload);
+          break;
+
+        case 'FOCUS_DROP':
+        case 'FOCUS_RECOVERED':
+        case 'SPEAKING_RATE_DROP':
+        case 'SPEAKING_RATE_RECOVERED':
+        case 'AGENDA_DEVIATION':
+          pushLiveAlert({
+            type: parsed.type,
+            offsetMs: parsed['offsetMs'] as number,
+            avg: parsed['avg'] as number | undefined,
+            contextFit: parsed['contextFit'] as number | undefined,
+          } satisfies LiveAlert);
+          break;
+      }
     });
 
     source.onerror = () => setConnected(false);
@@ -32,7 +58,7 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
       disconnectAlertsStream();
       setConnected(false);
     };
-  }, [meetingId, token, pushAlert]);
+  }, [meetingId, token, pushLiveAlert, pushFusedData]);
 
   return { connected };
 }

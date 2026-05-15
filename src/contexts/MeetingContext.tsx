@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useMediaStream } from '../hooks/useMediaStream';
-import type { MeetingAlert } from '../types';
+import type { LiveAlert, FusedDataPayload } from '../types';
 import * as meetingService from '../services/meeting.service';
 
 const DEFAULT_TIMELINE_RESOLUTION_MS = 2000;
@@ -40,14 +40,16 @@ interface MeetingContextValue {
   activeMeetingId: string | null;
   streamTicket: string | null;
   ticketExpiresAt: string | null;
-  liveAlerts: MeetingAlert[];
+  liveAlerts: LiveAlert[];
+  latestFusedData: FusedDataPayload | null;
   media: ReturnType<typeof useMediaStream>;
   isStarting: boolean;
   isEnding: boolean;
   startError: string | null;
   setActiveMeeting: (id: string | null) => void;
   setStreamTicket: (ticket: string | null, expiresAt: string | null) => void;
-  pushAlert: (alert: MeetingAlert) => void;
+  pushLiveAlert: (alert: LiveAlert) => void;
+  pushFusedData: (data: FusedDataPayload) => void;
   resetMeetingState: () => void;
   startMeeting: (id: string) => Promise<void>;
   endMeeting: (id: string) => Promise<void>;
@@ -59,7 +61,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [activeMeetingId, setActiveMeetingState] = useState<string | null>(null);
   const [streamTicket, setTicket] = useState<string | null>(null);
   const [ticketExpiresAt, setTicketExpiresAt] = useState<string | null>(null);
-  const [liveAlerts, setLiveAlerts] = useState<MeetingAlert[]>([]);
+  const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
+  const [latestFusedData, setLatestFusedData] = useState<FusedDataPayload | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -93,8 +96,12 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     };
   }, [activeMeetingId]);
 
-  const pushAlert = useCallback((alert: MeetingAlert) => {
+  const pushLiveAlert = useCallback((alert: LiveAlert) => {
     setLiveAlerts((current) => [...current, alert]);
+  }, []);
+
+  const pushFusedData = useCallback((data: FusedDataPayload) => {
+    setLatestFusedData(data);
   }, []);
 
   const setStreamTicket = useCallback((ticket: string | null, expiresAt: string | null) => {
@@ -112,6 +119,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setTicket(null);
     setTicketExpiresAt(null);
     setLiveAlerts([]);
+    setLatestFusedData(null);
     setStartError(null);
     setTimelineResolutionMs(DEFAULT_TIMELINE_RESOLUTION_MS);
     stopMedia();
@@ -175,32 +183,36 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       streamTicket,
       ticketExpiresAt,
       liveAlerts,
+      latestFusedData,
       media,
       isStarting,
       isEnding,
       startError,
       setActiveMeeting,
       setStreamTicket,
-      pushAlert,
+      pushLiveAlert,
+      pushFusedData,
       resetMeetingState,
       startMeeting,
       endMeeting,
     }),
     [
-      activeMeetingId, 
-      streamTicket, 
-      ticketExpiresAt, 
-      liveAlerts, 
-      media, 
-      isStarting, 
-      isEnding, 
-      startError, 
-      setActiveMeeting, 
-      setStreamTicket, 
-      pushAlert, 
+      activeMeetingId,
+      streamTicket,
+      ticketExpiresAt,
+      liveAlerts,
+      latestFusedData,
+      media,
+      isStarting,
+      isEnding,
+      startError,
+      setActiveMeeting,
+      setStreamTicket,
+      pushLiveAlert,
+      pushFusedData,
       resetMeetingState,
       startMeeting,
-      endMeeting
+      endMeeting,
     ],
   );
 

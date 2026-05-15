@@ -1,14 +1,20 @@
-import type { MeetingAlert } from '../../types';
+import type { LiveAlert } from '../../types';
 
-function severityClass(severity: string) {
-  switch (severity.toUpperCase()) {
-    case 'HIGH':   return 'alert-item alert-item-high';
-    case 'MEDIUM': return 'alert-item alert-item-medium';
-    default:       return 'alert-item alert-item-low';
-  }
+const ALERT_LABELS: Record<LiveAlert['type'], string> = {
+  FOCUS_DROP:              'Focus dropped below threshold',
+  FOCUS_RECOVERED:         'Focus recovered',
+  SPEAKING_RATE_DROP:      'Speaking rate dropped below threshold',
+  SPEAKING_RATE_RECOVERED: 'Speaking rate recovered',
+  AGENDA_DEVIATION:        'Meeting is deviating from the agenda',
+};
+
+function formatDetail(alert: LiveAlert): string {
+  if (alert.avg !== undefined) return `avg: ${(alert.avg * 100).toFixed(1)}%`;
+  if (alert.contextFit !== undefined) return `context fit: ${(alert.contextFit * 100).toFixed(0)}%`;
+  return '';
 }
 
-export function AlertFeed({ alerts }: { alerts: MeetingAlert[] }) {
+export function AlertFeed({ alerts }: { alerts: LiveAlert[] }) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -21,9 +27,9 @@ export function AlertFeed({ alerts }: { alerts: MeetingAlert[] }) {
         <p style={{ fontSize: 'var(--text-sm)', margin: 0 }}>No alerts yet.</p>
       ) : (
         alerts.map((alert) => (
-          <article key={alert.id} className={severityClass(alert.severity)}>
-            <div className="alert-item-label">{alert.eventType}</div>
-            <div className="alert-item-message">{alert.message}</div>
+          <article key={`${alert.type}-${alert.offsetMs}`} className="alert-item">
+            <div className="alert-item-label">{ALERT_LABELS[alert.type]}</div>
+            <div className="alert-item-message">{formatDetail(alert)}</div>
           </article>
         ))
       )}

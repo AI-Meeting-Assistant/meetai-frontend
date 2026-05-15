@@ -54,3 +54,40 @@ export interface ApiEnvelope<T> {
     message: string;
   };
 }
+
+export type SseEventType =
+  | 'CONNECTED'
+  | 'FUSED_DATA'
+  | 'FOCUS_DROP'
+  | 'FOCUS_RECOVERED'
+  | 'SPEAKING_RATE_DROP'
+  | 'SPEAKING_RATE_RECOVERED'
+  | 'AGENDA_DEVIATION';
+
+export interface FusedDataPayload {
+  meetingId: string;
+  offsetMs: number;
+  audio: {
+    vadSpeechMs: number | null;
+    vadSilenceMs: number | null;
+    vadSpeechRatioPercent: number | null;
+    transcript: string | null;
+    speakerLabelsWindow: unknown[] | null;
+  };
+  video: {
+    focusScore: number;
+    persons: Array<{
+      personId: number;
+      focusScore: number;
+      speakingRatio: number;
+      frameCount: number;
+    }>;
+  };
+}
+
+export interface LiveAlert {
+  type: Exclude<SseEventType, 'CONNECTED' | 'FUSED_DATA'>;
+  offsetMs: number;
+  avg?: number;
+  contextFit?: number;
+}
