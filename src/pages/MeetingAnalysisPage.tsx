@@ -4,6 +4,8 @@ import { AgendaPanel } from '../components/analysis/AgendaPanel'
 import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
 import { AlertsLog } from '../components/analysis/AlertsLog';
 import { ExportButton } from '../components/analysis/ExportButton';
+import { FocusPieChart } from '../components/analysis/FocusPieChart';
+import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { PageHeader } from '../components/common/PageHeader';
 import { ConfirmDeleteMeetingModal } from '../components/meetings/ConfirmDeleteMeetingModal';
@@ -17,12 +19,12 @@ export function MeetingAnalysisPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { 
-    startMeeting, 
-    endMeeting, 
-    isStarting, 
-    isEnding, 
-    startError 
+  const {
+    startMeeting,
+    endMeeting,
+    isStarting,
+    isEnding,
+    startError
   } = useMeeting();
 
   const { analysis, meeting, isLoading, refresh } = useMeetingDetails(id ?? null);
@@ -138,6 +140,8 @@ export function MeetingAnalysisPage() {
       </div>
 
       <div className="analysis-grid">
+        <FocusPieChart focusRate={analysis.focusRate ?? 0} />
+        <SpeakerTimeChart timeline={analysis.timeline ?? []} />
         <AlertsLog alerts={analysis.alerts} />
         <TimelineViewer entries={analysis.timeline} />
       </div>

@@ -44,6 +44,7 @@ export interface MeetingAnalysis {
   timeline: MeetingTimelineEntry[];
   alerts: MeetingAlert[];
   aiSummary?: string | null;
+  focusRate?: number;
 }
 
 export interface ApiEnvelope<T> {
