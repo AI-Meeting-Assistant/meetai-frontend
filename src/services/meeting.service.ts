@@ -69,6 +69,13 @@ export async function endMeeting(id: string): Promise<EndMeetingResponse> {
   });
 }
 
+/** DELETE /meetings/:id — permanently deletes meeting and related data. */
+export async function deleteMeeting(id: string): Promise<void> {
+  await apiRequest<void>(`/meetings/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function exportReport(id: string, format: 'pdf'): Promise<string> {
   const data = await apiRequest<{ url: string }>(`/meetings/${id}/export?format=${format}`);
   return data.url;

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AgendaPanel } from '../components/analysis/AgendaPanel'
 import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
@@ -5,10 +6,12 @@ import { AlertsLog } from '../components/analysis/AlertsLog';
 import { ExportButton } from '../components/analysis/ExportButton';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { PageHeader } from '../components/common/PageHeader';
+import { ConfirmDeleteMeetingModal } from '../components/meetings/ConfirmDeleteMeetingModal';
 import { StatusBadge } from '../components/meetings/StatusBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useMeeting } from '../contexts/MeetingContext';
 import { useMeetingDetails } from '../hooks/useMeetingDetails';
+import * as meetingService from '../services/meeting.service';
 
 export function MeetingAnalysisPage() {
   const navigate = useNavigate();
@@ -23,6 +26,8 @@ export function MeetingAnalysisPage() {
   } = useMeeting();
 
   const { analysis, meeting, isLoading, refresh } = useMeetingDetails(id ?? null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleStartMeeting = async () => {
     if (!id) return;
@@ -41,6 +46,17 @@ export function MeetingAnalysisPage() {
       await refresh();
     } catch (error) {
       // Error handled by console or context potentially
+    }
+  };
+
+  const handleDeleteMeeting = async () => {
+    if (!id) return;
+    setIsDeleting(true);
+    try {
+      await meetingService.deleteMeeting(id);
+      navigate('/meetings');
+    } catch {
+      setIsDeleting(false);
     }
   };
 
@@ -90,6 +106,15 @@ export function MeetingAnalysisPage() {
               </button>
             </>
           )}
+          {status !== 'IN_PROGRESS' && (
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={() => setShowDeleteModal(true)}
+            >
+              Delete Meeting
+            </button>
+          )}
         </>
       )}
       <ExportButton />
@@ -116,6 +141,15 @@ export function MeetingAnalysisPage() {
         <AlertsLog alerts={analysis.alerts} />
         <TimelineViewer entries={analysis.timeline} />
       </div>
+
+      {showDeleteModal && (
+        <ConfirmDeleteMeetingModal
+          meetingTitle={meeting?.title ?? 'this meeting'}
+          onConfirm={handleDeleteMeeting}
+          onClose={() => setShowDeleteModal(false)}
+          isDeleting={isDeleting}
+        />
+      )}
     </main>
   );
 }
