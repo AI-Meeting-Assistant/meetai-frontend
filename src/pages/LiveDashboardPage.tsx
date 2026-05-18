@@ -2,9 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertFeed } from '../components/dashboard/AlertFeed';
 import { PageHeader } from '../components/common/PageHeader';
-import { useAuth } from '../contexts/AuthContext';
 import { useMeeting } from '../contexts/MeetingContext';
-import { useSSE } from '../hooks/useSSE';
 import { useMeetingDetails } from '../hooks/useMeetingDetails';
 import { AgendaPanel } from '../components/analysis/AgendaPanel';
 import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
@@ -18,18 +16,18 @@ const REFRESH_INTERVAL = 5000; // 5s refresh interval
 export function LiveDashboardPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { token } = useAuth();
   const {
     setActiveMeeting,
+    setLiveMeetingTitle,
     resetMeetingState,
     liveAlerts,
+    liveSseConnected,
     streamTicket,
     media,
     endMeeting,
-    isEnding
+    isEnding,
   } = useMeeting();
 
-  const { connected } = useSSE(id ?? null, token);
   const { meeting, analysis, refresh } = useMeetingDetails(id ?? null);
 
   useEffect(() => {
@@ -50,6 +48,12 @@ export function LiveDashboardPage() {
     return () => clearInterval(interval);
   }, [id, refresh]);
 
+  useEffect(() => {
+    if (meeting?.title) {
+      setLiveMeetingTitle(meeting.title);
+    }
+  }, [meeting?.title, setLiveMeetingTitle]);
+
   const handleEnd = async () => {
     if (!id) return;
     try {
@@ -63,8 +67,8 @@ export function LiveDashboardPage() {
   const statusLabel = (
     <>
       <span className="status-label">
-        <span className={`status-dot ${connected ? 'status-dot-connected' : 'status-dot-disconnected'}`} />
-        {connected ? 'Connected' : 'Disconnected'}
+        <span className={`status-dot ${liveSseConnected ? 'status-dot-connected' : 'status-dot-disconnected'}`} />
+        {liveSseConnected ? 'Connected' : 'Disconnected'}
       </span>
       {streamTicket && (
         <span className="status-label">

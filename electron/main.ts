@@ -1,6 +1,7 @@
-import { app, BrowserWindow, desktopCapturer, session } from 'electron';
+import { app, BrowserWindow, desktopCapturer, ipcMain, session } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { notificationManager, type DesktopAlertPayload } from './notificationManager';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname, '..');
@@ -9,6 +10,18 @@ const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let mainWindow: BrowserWindow | null = null;
+
+function registerNotificationIpc(): void {
+  ipcMain.handle('notifications:is-supported', () => notificationManager.isSupported());
+
+  ipcMain.handle('notifications:handle-alert', (_event, payload: DesktopAlertPayload) => {
+    notificationManager.handleAlert(payload);
+  });
+
+  ipcMain.handle('notifications:clear-all', () => {
+    notificationManager.clearAll();
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -22,9 +35,8 @@ function createWindow() {
     },
   });
 
-  // Handle permission requests (Microphone)
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
-    const allowedPermissions = ['media', 'audioCapture', 'display-capture'];
+    const allowedPermissions = ['media', 'audioCapture', 'display-capture', 'notifications'];
     if (allowedPermissions.includes(permission)) {
       callback(true);
     } else {
@@ -32,24 +44,26 @@ function createWindow() {
     }
   });
 
-  // Handle Screen Capture requests
   session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
     desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
-      // For MVP, we'll just pick the first screen source.
-      // In a real app, you'd show a dialog to the user.
-      const screenSource = sources.find(s => s.id.startsWith('screen:')) || sources[0];
+      const screenSource = sources.find((s) => s.id.startsWith('screen:')) || sources[0];
       callback({ video: screenSource, audio: 'loopback' });
     });
   });
 
   if (VITE_DEV_SERVER_URL) {
     void mainWindow.loadURL(VITE_DEV_SERVER_URL);
-    // Open dev tools in development
     mainWindow.webContents.openDevTools();
   } else {
     void mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
   }
 }
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.meetai.desktop');
+}
+
+registerNotificationIpc();
 
 app.whenReady().then(createWindow);
 
@@ -60,6 +74,7 @@ app.on('activate', () => {
 });
 
 app.on('window-all-closed', () => {
+  notificationManager.clearAll();
   if (process.platform !== 'darwin') {
     app.quit();
     mainWindow = null;

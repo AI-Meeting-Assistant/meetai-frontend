@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useMediaStream } from '../hooks/useMediaStream';
 import type { LiveAlert, FusedDataPayload } from '../types';
 import * as meetingService from '../services/meeting.service';
+import { clearDesktopNotifications } from '../services/desktopNotifications';
 
 const DEFAULT_TIMELINE_RESOLUTION_MS = 2000;
 
@@ -42,6 +43,10 @@ interface MeetingContextValue {
   ticketExpiresAt: string | null;
   liveAlerts: LiveAlert[];
   latestFusedData: FusedDataPayload | null;
+  liveSseConnected: boolean;
+  liveMeetingTitle: string | null;
+  setLiveSseConnected: (connected: boolean) => void;
+  setLiveMeetingTitle: (title: string | null) => void;
   media: ReturnType<typeof useMediaStream>;
   isStarting: boolean;
   isEnding: boolean;
@@ -63,6 +68,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [ticketExpiresAt, setTicketExpiresAt] = useState<string | null>(null);
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
   const [latestFusedData, setLatestFusedData] = useState<FusedDataPayload | null>(null);
+  const [liveSseConnected, setLiveSseConnected] = useState(false);
+  const [liveMeetingTitle, setLiveMeetingTitle] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -120,9 +127,12 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setTicketExpiresAt(null);
     setLiveAlerts([]);
     setLatestFusedData(null);
+    setLiveSseConnected(false);
+    setLiveMeetingTitle(null);
     setStartError(null);
     setTimelineResolutionMs(DEFAULT_TIMELINE_RESOLUTION_MS);
     stopMedia();
+    void clearDesktopNotifications();
   }, [stopMedia]);
 
   const startMeeting = useCallback(async (id: string) => {
@@ -146,6 +156,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       setTimelineResolutionMs(effectiveResolutionMs);
       setTicket(streamTicket);
       setTicketExpiresAt(ticketExpiresAt);
+      setLiveMeetingTitle(analysis.meeting.title ?? null);
       await media.start(id, streamTicket, {
         chunkDurationMs: effectiveResolutionMs,
         initialOffsetMs,
@@ -169,6 +180,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       media.stop();
       setTicket(null);
       setTicketExpiresAt(null);
+      setLiveSseConnected(false);
+      void clearDesktopNotifications();
     } catch (error) {
       console.error('Failed to end meeting:', error);
       throw error;
@@ -184,6 +197,10 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       ticketExpiresAt,
       liveAlerts,
       latestFusedData,
+      liveSseConnected,
+      liveMeetingTitle,
+      setLiveSseConnected,
+      setLiveMeetingTitle,
       media,
       isStarting,
       isEnding,
@@ -202,6 +219,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       ticketExpiresAt,
       liveAlerts,
       latestFusedData,
+      liveSseConnected,
+      liveMeetingTitle,
       media,
       isStarting,
       isEnding,
@@ -216,7 +235,11 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <MeetingContext.Provider value={value}>{children}</MeetingContext.Provider>;
+  return (
+    <MeetingContext.Provider value={value}>
+      {children}
+    </MeetingContext.Provider>
+  );
 }
 
 export function useMeeting() {

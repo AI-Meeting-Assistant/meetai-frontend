@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { connectAlertsStream, disconnectAlertsStream, onMessage } from '../services/sse.service';
+import { showDesktopNotificationForAlert } from '../services/desktopNotifications';
 import { useMeeting } from '../contexts/MeetingContext';
 import type { SseEventType, LiveAlert, FusedDataPayload } from '../types';
 
@@ -9,12 +10,13 @@ interface UseSSEResult {
 
 export function useSSE(meetingId: string | null, token: string | null): UseSSEResult {
   const [connected, setConnected] = useState(false);
-  const { pushLiveAlert, pushFusedData } = useMeeting();
+  const { pushLiveAlert, pushFusedData, setLiveSseConnected, liveMeetingTitle } = useMeeting();
 
   useEffect(() => {
     if (!meetingId || !token) {
       disconnectAlertsStream();
       setConnected(false);
+      setLiveSseConnected(false);
       return;
     }
 
@@ -41,14 +43,17 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
         case 'FOCUS_RECOVERED':
         case 'SPEAKING_RATE_DROP':
         case 'SPEAKING_RATE_RECOVERED':
-        case 'AGENDA_DEVIATION':
-          pushLiveAlert({
+        case 'AGENDA_DEVIATION': {
+          const alert = {
             type: parsed.type,
             offsetMs: parsed['offsetMs'] as number,
             avg: parsed['avg'] as number | undefined,
             contextFit: parsed['contextFit'] as number | undefined,
-          } satisfies LiveAlert);
+          } satisfies LiveAlert;
+          pushLiveAlert(alert);
+          void showDesktopNotificationForAlert(alert, liveMeetingTitle ?? undefined);
           break;
+        }
       }
     });
 
@@ -57,8 +62,13 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
     return () => {
       disconnectAlertsStream();
       setConnected(false);
+      setLiveSseConnected(false);
     };
-  }, [meetingId, token, pushLiveAlert, pushFusedData]);
+  }, [meetingId, token, pushLiveAlert, pushFusedData, liveMeetingTitle, setLiveSseConnected]);
+
+  useEffect(() => {
+    setLiveSseConnected(connected);
+  }, [connected, setLiveSseConnected]);
 
   return { connected };
 }
