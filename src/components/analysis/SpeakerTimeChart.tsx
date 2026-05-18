@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import type { MeetingTimelineEntry } from '../../types';
 
 interface SpeakerTimeChartProps {
@@ -14,8 +14,8 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
       const payload = entry.payload as any;
       if (!payload) continue;
 
-      const speechMs = payload.vadSpeechMs || 0;
-      const speakers = payload.speakerLabelsWindow || [];
+      const speechMs = payload.audio?.vadSpeechMs || 0;
+      const speakers = payload.audio?.speakerLabelsWindow || [];
 
       if (speechMs > 0) {
         const speaker = speakers.length > 0 ? (speakers[0].speaker || 'UNKNOWN') : 'UNKNOWN';

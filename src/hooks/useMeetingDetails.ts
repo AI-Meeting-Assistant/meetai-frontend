@@ -26,11 +26,22 @@ export function useMeetingDetails(id: string | null) {
     fetchDetails();
   }, [fetchDetails]);
 
+  const fetchTimeline = useCallback(async () => {
+    if (!id) return;
+    try {
+      const timeline = await meetingService.getMeetingTimeline(id);
+      setAnalysis((prev) => prev ? { ...prev, timeline } : prev);
+    } catch (err) {
+      console.error('Failed to fetch timeline:', err);
+    }
+  }, [id]);
+
   return { 
     analysis, 
     meeting: analysis?.meeting ?? null, 
     isLoading, 
     error, 
-    refresh: fetchDetails 
+    refresh: fetchDetails,
+    fetchTimeline
   };
 }

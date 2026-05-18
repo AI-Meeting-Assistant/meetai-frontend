@@ -16,6 +16,7 @@ interface UseMediaStreamResult {
       initialOffsetMs?: number;
       title?: string;
       agenda?: string;
+      onChunkUploaded?: () => void;
     },
   ) => Promise<void>;
   stop: () => void;
@@ -140,6 +141,7 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
         initialOffsetMs?: number;
         title?: string;
         agenda?: string;
+        onChunkUploaded?: () => void;
       },
     ) => {
       console.log(`[useMediaStream] Starting recording for meeting: ${meetingId}`);
@@ -211,6 +213,7 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
           void (async () => {
             try {
               await uploadChunk({ meetingId, streamTicket, offsetMs: offset, audioChunk: audioBlob, videoFrames, title, agenda });
+              options?.onChunkUploaded?.();
             } catch (error) {
               console.error('[useMediaStream] Failed to upload chunk:', error);
               if (error instanceof StreamUnauthorizedError) {

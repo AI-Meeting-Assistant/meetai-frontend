@@ -1,4 +1,3 @@
-import React from 'react';
 
 interface FocusPieChartProps {
   focusRate: number; // 0 to 100

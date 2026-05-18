@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import type { Meeting, MeetingAnalysis } from '../types';
+import type { Meeting, MeetingAnalysis, MeetingTimelineEntry } from '../types';
 
 // ---------------------------------------------------------------------------
 // Payloads & response shapes
@@ -45,6 +45,10 @@ export async function createMeeting(payload: CreateMeetingPayload): Promise<Meet
 
 export async function getMeetingAnalysis(id: string): Promise<MeetingAnalysis> {
   return apiRequest<MeetingAnalysis>(`/meetings/${id}`);
+}
+
+export async function getMeetingTimeline(id: string): Promise<MeetingTimelineEntry[]> {
+  return apiRequest<MeetingTimelineEntry[]>(`/timeline/${id}`);
 }
 
 /** PATCH /meetings/:id — updates meeting title and/or agenda. */

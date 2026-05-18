@@ -61,6 +61,7 @@ interface MeetingContextValue {
   resetMeetingState: () => void;
   startMeeting: (id: string) => Promise<void>;
   endMeeting: (id: string) => Promise<void>;
+  uploadCount: number;
 }
 
 const MeetingContext = createContext<MeetingContextValue | undefined>(undefined);
@@ -78,6 +79,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [isEnding, setIsEnding] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [timelineResolutionMs, setTimelineResolutionMs] = useState<number>(DEFAULT_TIMELINE_RESOLUTION_MS);
+  const [uploadCount, setUploadCount] = useState(0);
   
   const media = useMediaStream(timelineResolutionMs);
 
@@ -151,6 +153,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setLiveMeetingTitle(null);
     setStartError(null);
     setTimelineResolutionMs(DEFAULT_TIMELINE_RESOLUTION_MS);
+    setUploadCount(0);
     stopMedia();
     void clearDesktopNotifications();
   }, [stopMedia]);
@@ -182,6 +185,9 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
         initialOffsetMs,
         title:  analysis.meeting.title,
         agenda: analysis.meeting.agenda ?? '',
+        onChunkUploaded: () => {
+          setUploadCount((c) => c + 1);
+        }
       });
     } catch (error) {
       console.error('Failed to start meeting:', error);
@@ -236,6 +242,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       resetMeetingState,
       startMeeting,
       endMeeting,
+      uploadCount,
     }),
     [
       activeMeetingId,
@@ -257,6 +264,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       resetMeetingState,
       startMeeting,
       endMeeting,
+      uploadCount,
     ],
   );
 

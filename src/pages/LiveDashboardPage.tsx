@@ -15,7 +15,7 @@ import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
 import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 
-const REFRESH_INTERVAL = 5000; // 5s refresh interval
+// removed REFRESH_INTERVAL
 
 export function LiveDashboardPage() {
   const navigate = useNavigate();
@@ -32,10 +32,11 @@ export function LiveDashboardPage() {
     media,
     endMeeting,
     isEnding,
+    uploadCount,
   } = useMeeting();
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const { meeting, analysis, refresh } = useMeetingDetails(id ?? null);
+  const { meeting, analysis, fetchTimeline } = useMeetingDetails(id ?? null);
 
   useEffect(() => {
     setActiveMeeting(id ?? null);
@@ -48,12 +49,10 @@ export function LiveDashboardPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!id) return;
-    const interval = setInterval(() => {
-      refresh();
-    }, REFRESH_INTERVAL);
-    return () => clearInterval(interval);
-  }, [id, refresh]);
+    if (uploadCount > 0) {
+      fetchTimeline();
+    }
+  }, [uploadCount, fetchTimeline]);
 
   useEffect(() => {
     if (meeting?.title) {
@@ -93,6 +92,17 @@ export function LiveDashboardPage() {
     </>
   );
 
+  // Compute latest focus rate from the timeline payload
+  const timeline = analysis?.timeline ?? [];
+  const latestTimelineEntry = timeline[timeline.length - 1];
+  let latestFocusRate = analysis?.focusRate ?? 0;
+  if (latestTimelineEntry) {
+    const payload = latestTimelineEntry.payload as any;
+    if (typeof payload?.video?.focusScore === 'number') {
+      latestFocusRate = payload.video.focusScore * 100;
+    }
+  }
+
   return (
     <main className="page">
       <PageHeader
@@ -126,15 +136,22 @@ export function LiveDashboardPage() {
       <div className="analysis-full">
         <AgendaPanel agenda={meeting?.agenda ?? ''} />
         <AiSummaryPanel summary={analysis?.aiSummary} />
+        <LiveTranscriptPanel blocks={liveTranscriptBlocks} />
+        <FocusLevelChart timeline={timeline} />
       </div>
 
       <div className="analysis-grid">
-        <LiveTranscriptPanel blocks={liveTranscriptBlocks} />
-        <FocusPieChart focusRate={analysis?.focusRate ?? 0} />
-        <SpeakerTimeChart timeline={analysis?.timeline ?? []} />
-        <FocusLevelChart timeline={analysis?.timeline ?? []} />
-        <AlertFeed alerts={liveAlerts} />
-        <TimelineViewer entries={analysis?.timeline ?? []} />
+        <FocusPieChart focusRate={latestFocusRate} />
+        <SpeakerTimeChart timeline={timeline} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <AlertFeed alerts={liveAlerts} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <TimelineViewer entries={timeline} />
+        </div>
       </div>
 
       {showEditModal && meeting && (

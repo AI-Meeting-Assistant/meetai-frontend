@@ -149,14 +149,21 @@ export function MeetingAnalysisPage() {
       <div className="analysis-full">
         <AgendaPanel agenda={meeting?.agenda ?? ''} />
         <AiSummaryPanel summary={analysis.aiSummary} />
+        <FocusLevelChart timeline={analysis.timeline ?? []} />
       </div>
 
       <div className="analysis-grid">
         <FocusPieChart focusRate={analysis.focusRate ?? 0} />
         <SpeakerTimeChart timeline={analysis.timeline ?? []} />
-        <FocusLevelChart timeline={analysis.timeline ?? []} />
-        <AlertsLog alerts={analysis.alerts} />
-        <TimelineViewer entries={analysis.timeline} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <AlertsLog alerts={analysis.alerts} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <TimelineViewer entries={analysis.timeline} />
+        </div>
       </div>
 
       {showEditModal && meeting && (

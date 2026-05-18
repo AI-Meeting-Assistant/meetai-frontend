@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import type { MeetingTimelineEntry, FusedDataPayload } from "../../types";
 
 interface FocusLevelChartProps {
@@ -96,7 +96,7 @@ export function FocusLevelChart({ timeline }: FocusLevelChartProps) {
           <text
             x={paddingLeft - 5}
             y={paddingTop}
-            fontSize="15"
+            fontSize="10"
             fill="var(--color-text-muted)"
             textAnchor="end"
             dominantBaseline="middle"
@@ -106,7 +106,7 @@ export function FocusLevelChart({ timeline }: FocusLevelChartProps) {
           <text
             x={paddingLeft - 5}
             y={paddingTop + chartHeight / 2}
-            fontSize="15"
+            fontSize="10"
             fill="var(--color-text-muted)"
             textAnchor="end"
             dominantBaseline="middle"
@@ -116,7 +116,7 @@ export function FocusLevelChart({ timeline }: FocusLevelChartProps) {
           <text
             x={paddingLeft - 5}
             y={height - paddingBottom}
-            fontSize="15"
+            fontSize="10"
             fill="var(--color-text-muted)"
             textAnchor="end"
             dominantBaseline="middle"
@@ -128,7 +128,7 @@ export function FocusLevelChart({ timeline }: FocusLevelChartProps) {
           <text
             x={paddingLeft}
             y={height - paddingBottom + 12}
-            fontSize="15"
+            fontSize="10"
             fill="var(--color-text-muted)"
             textAnchor="start"
             dominantBaseline="hanging"
@@ -139,7 +139,7 @@ export function FocusLevelChart({ timeline }: FocusLevelChartProps) {
             <text
               x={width - paddingRight}
               y={height - paddingBottom + 12}
-              fontSize="15"
+              fontSize="10"
               fill="var(--color-text-muted)"
               textAnchor="end"
               dominantBaseline="hanging"
