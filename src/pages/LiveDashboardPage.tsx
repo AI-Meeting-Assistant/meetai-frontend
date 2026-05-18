@@ -1,14 +1,18 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertFeed } from '../components/dashboard/AlertFeed';
-import { LiveMetricPanel } from '../components/dashboard/LiveMetricPanel';
 import { PageHeader } from '../components/common/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { useMeeting } from '../contexts/MeetingContext';
 import { useSSE } from '../hooks/useSSE';
 import { useMeetingDetails } from '../hooks/useMeetingDetails';
+import { AgendaPanel } from '../components/analysis/AgendaPanel';
+import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
 import { FocusPieChart } from '../components/analysis/FocusPieChart';
 import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
+import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
+import { TimelineViewer } from '../components/analysis/TimelineViewer';
+
 const REFRESH_INTERVAL = 5000; // 5s refresh interval
 
 export function LiveDashboardPage() {
@@ -94,13 +98,18 @@ export function LiveDashboardPage() {
         error={media.streamError}
       />
 
-      <div className="dashboard-grid">
-        <FocusPieChart focusRate={analysis?.focusRate ?? 0} />
-        <SpeakerTimeChart timeline={analysis?.timeline ?? []} />
-        <LiveMetricPanel label="Emotion" />
+      <div className="analysis-full">
+        {meeting?.agenda && <AgendaPanel agenda={meeting.agenda} />}
+        <AiSummaryPanel summary={analysis?.aiSummary} />
       </div>
 
-      <AlertFeed alerts={liveAlerts} />
+      <div className="analysis-grid">
+        <FocusPieChart focusRate={analysis?.focusRate ?? 0} />
+        <SpeakerTimeChart timeline={analysis?.timeline ?? []} />
+        <FocusLevelChart timeline={analysis?.timeline ?? []} />
+        <AlertFeed alerts={liveAlerts} />
+        <TimelineViewer entries={analysis?.timeline ?? []} />
+      </div>
     </main>
   );
 }

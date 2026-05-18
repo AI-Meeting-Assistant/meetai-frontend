@@ -45,12 +45,28 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
   return (
     <div className="panel" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="panel-header" style={{ marginBottom: 'var(--space-4)' }}>
-        <h3>Speaking Time</h3>
+        <h3>Speaker Time Chart</h3>
       </div>
 
       {sorted.length === 0 ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
-          No speaking data yet.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', flex: 1, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', opacity: 0.8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+              <span style={{ fontWeight: 'var(--font-medium)', color: 'var(--color-text-muted)' }}>Waiting for speakers...</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>0 s (0.0%)</span>
+            </div>
+            <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px' }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', opacity: 0.7 }}>
+            <div style={{ height: '20px' }} />
+            <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px', width: '50%' }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', opacity: 0.5 }}>
+            <div style={{ height: '20px' }} />
+            <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px', width: '80%' }} />
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>

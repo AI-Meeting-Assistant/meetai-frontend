@@ -6,6 +6,7 @@ import { AlertsLog } from '../components/analysis/AlertsLog';
 import { ExportButton } from '../components/analysis/ExportButton';
 import { FocusPieChart } from '../components/analysis/FocusPieChart';
 import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
+import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { PageHeader } from '../components/common/PageHeader';
 import { ConfirmDeleteMeetingModal } from '../components/meetings/ConfirmDeleteMeetingModal';
@@ -142,6 +143,7 @@ export function MeetingAnalysisPage() {
       <div className="analysis-grid">
         <FocusPieChart focusRate={analysis.focusRate ?? 0} />
         <SpeakerTimeChart timeline={analysis.timeline ?? []} />
+        <FocusLevelChart timeline={analysis.timeline ?? []} />
         <AlertsLog alerts={analysis.alerts} />
         <TimelineViewer entries={analysis.timeline} />
       </div>
