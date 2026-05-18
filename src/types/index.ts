@@ -91,3 +91,13 @@ export interface LiveAlert {
   avg?: number;
   contextFit?: number;
 }
+
+export interface LiveTranscriptLine {
+  speaker: string;
+  text: string;
+}
+
+export interface LiveTranscriptBlock {
+  offsetMs: number;
+  lines: LiveTranscriptLine[];
+}

@@ -1,11 +1,13 @@
 import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useMediaStream } from '../hooks/useMediaStream';
-import type { LiveAlert, FusedDataPayload } from '../types';
+import type { LiveAlert, FusedDataPayload, LiveTranscriptBlock } from '../types';
 import * as meetingService from '../services/meeting.service';
 import { clearDesktopNotifications } from '../services/desktopNotifications';
+import { parseFusedTranscriptText } from '../utils/liveTranscript';
 
 const DEFAULT_TIMELINE_RESOLUTION_MS = 2000;
+const MAX_LIVE_TRANSCRIPT_BLOCKS = 300;
 
 function getElapsedOffsetMs(startedAt: string | null | undefined, resolutionMs: number): number {
   if (!startedAt) {
@@ -43,6 +45,7 @@ interface MeetingContextValue {
   ticketExpiresAt: string | null;
   liveAlerts: LiveAlert[];
   latestFusedData: FusedDataPayload | null;
+  liveTranscriptBlocks: LiveTranscriptBlock[];
   liveSseConnected: boolean;
   liveMeetingTitle: string | null;
   setLiveSseConnected: (connected: boolean) => void;
@@ -68,6 +71,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [ticketExpiresAt, setTicketExpiresAt] = useState<string | null>(null);
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
   const [latestFusedData, setLatestFusedData] = useState<FusedDataPayload | null>(null);
+  const [liveTranscriptBlocks, setLiveTranscriptBlocks] = useState<LiveTranscriptBlock[]>([]);
   const [liveSseConnected, setLiveSseConnected] = useState(false);
   const [liveMeetingTitle, setLiveMeetingTitle] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
@@ -109,6 +113,21 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
 
   const pushFusedData = useCallback((data: FusedDataPayload) => {
     setLatestFusedData(data);
+    const lines = parseFusedTranscriptText(data.audio?.transcript);
+    if (lines.length === 0) {
+      return;
+    }
+    const block: LiveTranscriptBlock = { offsetMs: data.offsetMs, lines };
+    setLiveTranscriptBlocks((prev) => {
+      const idx = prev.findIndex((b) => b.offsetMs === data.offsetMs);
+      const next =
+        idx >= 0
+          ? prev.map((b, i) => (i === idx ? block : b))
+          : [...prev, block];
+      return next.length > MAX_LIVE_TRANSCRIPT_BLOCKS
+        ? next.slice(-MAX_LIVE_TRANSCRIPT_BLOCKS)
+        : next;
+    });
   }, []);
 
   const setStreamTicket = useCallback((ticket: string | null, expiresAt: string | null) => {
@@ -127,6 +146,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setTicketExpiresAt(null);
     setLiveAlerts([]);
     setLatestFusedData(null);
+    setLiveTranscriptBlocks([]);
     setLiveSseConnected(false);
     setLiveMeetingTitle(null);
     setStartError(null);
@@ -180,6 +200,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       media.stop();
       setTicket(null);
       setTicketExpiresAt(null);
+      setLiveTranscriptBlocks([]);
       setLiveSseConnected(false);
       void clearDesktopNotifications();
     } catch (error) {
@@ -197,6 +218,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       ticketExpiresAt,
       liveAlerts,
       latestFusedData,
+      liveTranscriptBlocks,
       liveSseConnected,
       liveMeetingTitle,
       setLiveSseConnected,
@@ -219,6 +241,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       ticketExpiresAt,
       liveAlerts,
       latestFusedData,
+      liveTranscriptBlocks,
       liveSseConnected,
       liveMeetingTitle,
       media,

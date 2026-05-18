@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertFeed } from '../components/dashboard/AlertFeed';
+import { LiveTranscriptPanel } from '../components/dashboard/LiveTranscriptPanel';
 import { PageHeader } from '../components/common/PageHeader';
 import { useMeeting } from '../contexts/MeetingContext';
 import { useMeetingDetails } from '../hooks/useMeetingDetails';
@@ -21,6 +22,7 @@ export function LiveDashboardPage() {
     setLiveMeetingTitle,
     resetMeetingState,
     liveAlerts,
+    liveTranscriptBlocks,
     liveSseConnected,
     streamTicket,
     media,
@@ -108,6 +110,7 @@ export function LiveDashboardPage() {
       </div>
 
       <div className="analysis-grid">
+        <LiveTranscriptPanel blocks={liveTranscriptBlocks} />
         <FocusPieChart focusRate={analysis?.focusRate ?? 0} />
         <SpeakerTimeChart timeline={analysis?.timeline ?? []} />
         <FocusLevelChart timeline={analysis?.timeline ?? []} />
