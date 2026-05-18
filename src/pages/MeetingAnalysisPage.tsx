@@ -10,6 +10,7 @@ import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { PageHeader } from '../components/common/PageHeader';
 import { ConfirmDeleteMeetingModal } from '../components/meetings/ConfirmDeleteMeetingModal';
+import { EditMeetingModal } from '../components/meetings/EditMeetingModal';
 import { StatusBadge } from '../components/meetings/StatusBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useMeeting } from '../contexts/MeetingContext';
@@ -30,6 +31,7 @@ export function MeetingAnalysisPage() {
 
   const { analysis, meeting, isLoading, refresh } = useMeetingDetails(id ?? null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleStartMeeting = async () => {
@@ -50,6 +52,12 @@ export function MeetingAnalysisPage() {
     } catch (error) {
       // Error handled by console or context potentially
     }
+  };
+
+  const handleSaveMeeting = async (title: string, agenda: string) => {
+    if (!id) return;
+    await meetingService.updateMeeting(id, { title, agenda });
+    await refresh();
   };
 
   const handleDeleteMeeting = async () => {
@@ -87,6 +95,9 @@ export function MeetingAnalysisPage() {
     <>
       {isModerator && (
         <>
+          <button type="button" className="btn-secondary" onClick={() => setShowEditModal(true)}>
+            Edit Meeting
+          </button>
           {status === 'SCHEDULED' && (
             <button
               type="button"
@@ -136,7 +147,7 @@ export function MeetingAnalysisPage() {
       />
 
       <div className="analysis-full">
-        {meeting?.agenda && <AgendaPanel agenda={meeting.agenda} />}
+        <AgendaPanel agenda={meeting?.agenda ?? ''} />
         <AiSummaryPanel summary={analysis.aiSummary} />
       </div>
 
@@ -147,6 +158,15 @@ export function MeetingAnalysisPage() {
         <AlertsLog alerts={analysis.alerts} />
         <TimelineViewer entries={analysis.timeline} />
       </div>
+
+      {showEditModal && meeting && (
+        <EditMeetingModal
+          initialTitle={meeting.title}
+          initialAgenda={meeting.agenda ?? ''}
+          onSave={handleSaveMeeting}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
 
       {showDeleteModal && (
         <ConfirmDeleteMeetingModal

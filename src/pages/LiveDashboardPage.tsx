@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertFeed } from '../components/dashboard/AlertFeed';
+import { EditMeetingModal } from '../components/meetings/EditMeetingModal';
+import * as meetingService from '../services/meeting.service';
+import { useAuth } from '../contexts/AuthContext';
 import { LiveTranscriptPanel } from '../components/dashboard/LiveTranscriptPanel';
 import { PageHeader } from '../components/common/PageHeader';
 import { useMeeting } from '../contexts/MeetingContext';
@@ -17,6 +20,7 @@ const REFRESH_INTERVAL = 5000; // 5s refresh interval
 export function LiveDashboardPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const {
     setActiveMeeting,
     setLiveMeetingTitle,
@@ -29,6 +33,7 @@ export function LiveDashboardPage() {
     endMeeting,
     isEnding,
   } = useMeeting();
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const { meeting, analysis, refresh } = useMeetingDetails(id ?? null);
 
@@ -55,6 +60,13 @@ export function LiveDashboardPage() {
       setLiveMeetingTitle(meeting.title);
     }
   }, [meeting?.title, setLiveMeetingTitle]);
+
+  const handleSaveMeeting = async (title: string, agenda: string) => {
+    if (!id) return;
+    await meetingService.updateMeeting(id, { title, agenda });
+    setLiveMeetingTitle(title);
+    await refresh();
+  };
 
   const handleEnd = async () => {
     if (!id) return;
@@ -92,20 +104,27 @@ export function LiveDashboardPage() {
         title={meeting ? `${meeting.title} - Live Dashboard` : 'Live Dashboard'}
         statusLabel={statusLabel}
         actions={(
-          <button
-            type="button"
-            className="btn-danger"
-            onClick={handleEnd}
-            disabled={isEnding}
-          >
-            {isEnding ? 'Ending...' : 'End Meeting'}
-          </button>
+          <>
+            {user?.role === 'MODERATOR' && (
+              <button type="button" className="btn-secondary" onClick={() => setShowEditModal(true)}>
+                Edit Meeting
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={handleEnd}
+              disabled={isEnding}
+            >
+              {isEnding ? 'Ending...' : 'End Meeting'}
+            </button>
+          </>
         )}
         error={media.streamError}
       />
 
       <div className="analysis-full">
-        {meeting?.agenda && <AgendaPanel agenda={meeting.agenda} />}
+        <AgendaPanel agenda={meeting?.agenda ?? ''} />
         <AiSummaryPanel summary={analysis?.aiSummary} />
       </div>
 
@@ -117,6 +136,15 @@ export function LiveDashboardPage() {
         <AlertFeed alerts={liveAlerts} />
         <TimelineViewer entries={analysis?.timeline ?? []} />
       </div>
+
+      {showEditModal && meeting && (
+        <EditMeetingModal
+          initialTitle={meeting.title}
+          initialAgenda={meeting.agenda ?? ''}
+          onSave={handleSaveMeeting}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
     </main>
   );
 }
