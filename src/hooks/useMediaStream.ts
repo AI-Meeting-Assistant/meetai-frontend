@@ -4,6 +4,7 @@ import {
   StreamBadRequestError,
   uploadChunk,
 } from '../services/media-upload.service';
+import { loadFaceModel, startJpegCapture } from '../utils/face-canvas-pipeline';
 
 interface UseMediaStreamResult {
   prepare: () => Promise<void>;
@@ -34,46 +35,18 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
   const screenStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef    = useRef<MediaStream | null>(null);
 
-  // ── Recorders ────────────────────────────────────────────────────────────
-  const videoRecorderRef = useRef<MediaRecorder | null>(null);
+  // ── Recorders / capture ──────────────────────────────────────────────────
   const audioRecorderRef = useRef<MediaRecorder | null>(null);
+  const jpegCaptureRef   = useRef<{ flush: () => Blob[]; stop: () => void } | null>(null);
 
   // ── Audio mixing ─────────────────────────────────────────────────────────
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // ── Window tracking ──────────────────────────────────────────────────────
-  /** Running offset counters (client-authoritative). */
-  const videoOffsetRef = useRef<number>(0);
-  const audioOffsetRef = useRef<number>(0);
-
-  /**
-   * Pending blobs keyed by offsetMs.
-   * Each window fires two ondataavailable events (video + audio).
-   * We hold the first arrival until the second arrives, then upload together.
-   */
-  const pendingRef = useRef<
-    Map<number, { video?: Blob; audio?: Blob }>
-  >(new Map());
+  // ── Offset tracking (single counter — audio drives the cadence) ──────────
+  const offsetRef = useRef<number>(0);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  /**
-   * Picks the best supported video MIME type for the video-only recorder.
-   */
-  function pickVideoMime(): string {
-    for (const t of [
-      'video/webm;codecs=vp9',
-      'video/webm;codecs=vp8',
-      'video/webm',
-    ]) {
-      if (MediaRecorder.isTypeSupported(t)) return t;
-    }
-    return '';
-  }
-
-  /**
-   * Picks the best supported audio MIME type for the audio-only recorder.
-   */
   function pickAudioMime(): string {
     for (const t of [
       'audio/webm;codecs=opus',
@@ -90,13 +63,13 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
   const stop = useCallback(() => {
     console.log('[useMediaStream] Stopping...');
 
-    for (const recorder of [videoRecorderRef.current, audioRecorderRef.current]) {
-      if (recorder && recorder.state !== 'inactive') {
-        recorder.stop();
-      }
+    if (audioRecorderRef.current && audioRecorderRef.current.state !== 'inactive') {
+      audioRecorderRef.current.stop();
     }
-    videoRecorderRef.current = null;
     audioRecorderRef.current = null;
+
+    jpegCaptureRef.current?.stop();
+    jpegCaptureRef.current = null;
 
     [screenStreamRef, micStreamRef].forEach(ref => {
       ref.current?.getTracks().forEach(t => {
@@ -111,11 +84,7 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
       audioContextRef.current = null;
     }
 
-    // Clear pending window state
-    videoOffsetRef.current = 0;
-    audioOffsetRef.current = 0;
-    pendingRef.current.clear();
-
+    offsetRef.current = 0;
     setIsCapturing(false);
   }, []);
 
@@ -136,6 +105,7 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
       });
       console.log('[useMediaStream] Screen capture obtained.');
       screenStreamRef.current = screenStream;
+      await loadFaceModel();
 
       try {
         const micStream = await navigator.mediaDevices.getUserMedia({
@@ -196,62 +166,7 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
         }
 
         const mergedAudioStream = destination.stream;
-        const videoOnlyStream  = new MediaStream(
-          screenStreamRef.current.getVideoTracks(),
-        );
 
-        // ── Shared upload handler ─────────────────────────────────────────
-        /**
-         * Called when either the video or audio recorder delivers a chunk.
-         * Buffers the blob until both sides are ready, then uploads.
-         */
-        const handleBlob = async (
-          kind: 'video' | 'audio',
-          windowOffset: number,
-          blob: Blob,
-        ) => {
-          console.log(`[useMediaStream] Received ${kind} blob: size=${blob.size} bytes at offset ${windowOffset}`);
-
-          const map = pendingRef.current;
-          const entry = map.get(windowOffset) ?? {};
-          entry[kind] = blob;
-          map.set(windowOffset, entry);
-
-          if (!entry.video || !entry.audio) {
-            // Wait for the other half
-            return;
-          }
-
-          // Both halves arrived — upload and clean up
-          map.delete(windowOffset);
-          const { video: videoChunk, audio: audioChunk } = entry as Required<typeof entry>;
-
-          console.log(
-            `[useMediaStream] Uploading window offsetMs=${windowOffset} ` +
-            `(video=${videoChunk.size}B, audio=${audioChunk.size}B)`,
-          );
-
-          try {
-            await uploadChunk({
-              meetingId,
-              streamTicket,
-              offsetMs: windowOffset,
-              videoChunk,
-              audioChunk,
-            });
-          } catch (error) {
-            console.error('[useMediaStream] Failed to upload chunk:', error);
-            if (error instanceof StreamUnauthorizedError) {
-              setStreamError('Stream ticket expired.');
-              stop();
-            } else if (error instanceof StreamBadRequestError) {
-              setStreamError(`Gateway rejected window (offsetMs=${windowOffset}).`);
-            }
-          }
-        };
-
-        // ── Video recorder ────────────────────────────────────────────────
-        const videoMime = pickVideoMime();
         const effectiveChunkDurationMs = options?.chunkDurationMs ?? chunkDurationRef.current;
         const initialOffsetMs = options?.initialOffsetMs ?? 0;
 
@@ -262,50 +177,47 @@ export function useMediaStream(chunkDurationMs: number): UseMediaStreamResult {
           throw new Error(`Invalid initial offset: ${String(initialOffsetMs)}`);
         }
 
-        const videoRecorder = new MediaRecorder(videoOnlyStream, {
-          mimeType: videoMime,
-          videoBitsPerSecond: 1_000_000,
-        });
-        videoRecorderRef.current = videoRecorder;
-
-        videoRecorder.ondataavailable = (event) => {
-          const blob = event.data;
-          if (blob.size === 0) {
-            console.warn('[useMediaStream] Ignoring empty video blob (no offset advance)');
-            return;
-          }
-          const offset = videoOffsetRef.current;
-          videoOffsetRef.current += effectiveChunkDurationMs;
-          void handleBlob('video', offset, blob);
-        };
+        // ── JPEG capture ──────────────────────────────────────────────────
+        jpegCaptureRef.current = startJpegCapture(screenStreamRef.current.getVideoTracks()[0]);
 
         // ── Audio recorder ────────────────────────────────────────────────
+        // The audio recorder drives the upload cadence. On each chunk, we flush
+        // the accumulated JPEG frames and POST both together to /ingest.
         const audioMime = pickAudioMime();
-        const audioRecorder = new MediaRecorder(mergedAudioStream, {
-          mimeType: audioMime,
-        });
+        const audioRecorder = new MediaRecorder(mergedAudioStream, { mimeType: audioMime });
         audioRecorderRef.current = audioRecorder;
 
         audioRecorder.ondataavailable = (event) => {
-          const blob = event.data;
-          if (blob.size === 0) {
-            console.warn('[useMediaStream] Ignoring empty audio blob (no offset advance)');
+          const audioBlob = event.data;
+          if (audioBlob.size === 0) {
+            console.warn('[useMediaStream] Ignoring empty audio blob');
             return;
           }
-          const offset = audioOffsetRef.current;
-          audioOffsetRef.current += effectiveChunkDurationMs;
-          void handleBlob('audio', offset, blob);
+          const offset = offsetRef.current;
+          offsetRef.current += effectiveChunkDurationMs;
+
+          const videoFrames = jpegCaptureRef.current?.flush() ?? [];
+          console.log(
+            `[useMediaStream] Uploading offsetMs=${offset} ` +
+            `audio=${audioBlob.size}B frames=${videoFrames.length}`,
+          );
+
+          void (async () => {
+            try {
+              await uploadChunk({ meetingId, streamTicket, offsetMs: offset, audioChunk: audioBlob, videoFrames });
+            } catch (error) {
+              console.error('[useMediaStream] Failed to upload chunk:', error);
+              if (error instanceof StreamUnauthorizedError) {
+                setStreamError('Stream ticket expired.');
+                stop();
+              } else if (error instanceof StreamBadRequestError) {
+                setStreamError(`Gateway rejected window (offsetMs=${offset}).`);
+              }
+            }
+          })();
         };
 
-        // ── Kick both recorders in step ───────────────────────────────────
-        videoOffsetRef.current = initialOffsetMs;
-        audioOffsetRef.current = initialOffsetMs;
-        pendingRef.current.clear();
-
-        // Timeslice matches gateway MEDIA_CHUNK_DURATION_MS so each Blob is typically a
-        // standalone WebM segment (PyAV can av.open per POST). Avoid requestData()+start()
-        // without timeslice — that yields Matroska continuation fragments and decode errors.
-        videoRecorder.start(effectiveChunkDurationMs);
+        offsetRef.current = initialOffsetMs;
         audioRecorder.start(effectiveChunkDurationMs);
 
         setIsCapturing(true);

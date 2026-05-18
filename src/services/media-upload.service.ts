@@ -29,8 +29,8 @@ export interface UploadChunkPayload {
    * First window = 0. Contiguous windows: 0, D, 2D, …
    */
   offsetMs: number;
-  /** Video bytes for [offsetMs, offsetMs + D) */
-  videoChunk: Blob;
+  /** JPEG frames captured during [offsetMs, offsetMs + D) */
+  videoFrames: Blob[];
   /** Audio bytes for the same interval */
   audioChunk: Blob;
 }
@@ -41,21 +41,23 @@ export interface UploadChunkPayload {
  * POSTs one media window to the Python ingest gateway.
  *
  * Multipart fields sent:
- *   meetingId   (string)
+ *   meetingId    (string)
  *   streamTicket (string)
- *   offsetMs    (string → int, multiples of meeting timeline resolution)
- *   videoChunk  (webm file)
- *   audioChunk  (webm file)
+ *   offsetMs     (string → int, multiples of meeting timeline resolution)
+ *   audioChunk   (webm file)
+ *   videoFrames[] (one JPEG file per frame, typically 55–60 per chunk)
  */
 export async function uploadChunk(payload: UploadChunkPayload): Promise<void> {
-  const { meetingId, streamTicket, offsetMs, videoChunk, audioChunk } = payload;
+  const { meetingId, streamTicket, offsetMs, audioChunk, videoFrames } = payload;
 
   const formData = new FormData();
   formData.append('meetingId', meetingId);
   formData.append('streamTicket', streamTicket);
   formData.append('offsetMs', String(offsetMs));
-  formData.append('videoChunk', videoChunk, `video_${offsetMs}.webm`);
   formData.append('audioChunk', audioChunk, `audio_${offsetMs}.webm`);
+  for (const [i, frame] of videoFrames.entries()) {
+    formData.append('videoFrames[]', frame, `frame_${i}.jpg`);
+  }
 
   const response = await fetch(`${PYTHON_INGEST_BASE_URL}/ingest`, {
     method: 'POST',
