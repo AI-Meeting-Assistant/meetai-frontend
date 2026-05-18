@@ -180,6 +180,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       await media.start(id, streamTicket, {
         chunkDurationMs: effectiveResolutionMs,
         initialOffsetMs,
+        title:  analysis.meeting.title,
+        agenda: analysis.meeting.agenda ?? '',
       });
     } catch (error) {
       console.error('Failed to start meeting:', error);

@@ -33,6 +33,10 @@ export interface UploadChunkPayload {
   videoFrames: Blob[];
   /** Audio bytes for the same interval */
   audioChunk: Blob;
+  /** Meeting title — forwarded to text worker for adherence analysis */
+  title: string;
+  /** Meeting agenda — forwarded to text worker for adherence analysis */
+  agenda: string;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -48,12 +52,14 @@ export interface UploadChunkPayload {
  *   videoFrames[] (one JPEG file per frame, typically 55–60 per chunk)
  */
 export async function uploadChunk(payload: UploadChunkPayload): Promise<void> {
-  const { meetingId, streamTicket, offsetMs, audioChunk, videoFrames } = payload;
+  const { meetingId, streamTicket, offsetMs, audioChunk, videoFrames, title, agenda } = payload;
 
   const formData = new FormData();
   formData.append('meetingId', meetingId);
   formData.append('streamTicket', streamTicket);
   formData.append('offsetMs', String(offsetMs));
+  formData.append('title', title);
+  formData.append('agenda', agenda);
   formData.append('audioChunk', audioChunk, `audio_${offsetMs}.webm`);
   for (const [i, frame] of videoFrames.entries()) {
     formData.append('videoFrames[]', frame, `frame_${i}.jpg`);
