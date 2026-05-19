@@ -13,6 +13,8 @@ import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
 import { FocusPieChart } from '../components/analysis/FocusPieChart';
 import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
 import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
+import { SpeakingRatePieChart } from '../components/analysis/SpeakingRatePieChart';
+import { SpeakingRateLevelChart } from '../components/analysis/SpeakingRateLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 
 // removed REFRESH_INTERVAL
@@ -96,10 +98,14 @@ export function LiveDashboardPage() {
   const timeline = analysis?.timeline ?? [];
   const latestTimelineEntry = timeline[timeline.length - 1];
   let latestFocusRate = analysis?.focusRate ?? 0;
+  let latestSpeakingRate = 0;
   if (latestTimelineEntry) {
     const payload = latestTimelineEntry.payload as any;
     if (typeof payload?.video?.focusScore === 'number') {
       latestFocusRate = payload.video.focusScore * 100;
+    }
+    if (typeof payload?.audio?.vadSpeechRatioPercent === 'number') {
+      latestSpeakingRate = payload.audio.vadSpeechRatioPercent;
     }
   }
 
@@ -138,10 +144,12 @@ export function LiveDashboardPage() {
         <AiSummaryPanel summary={analysis?.aiSummary} />
         <LiveTranscriptPanel blocks={liveTranscriptBlocks} />
         <FocusLevelChart timeline={timeline} />
+        <SpeakingRateLevelChart timeline={timeline} />
       </div>
 
       <div className="analysis-grid">
         <FocusPieChart focusRate={latestFocusRate} />
+        <SpeakingRatePieChart speakingRate={latestSpeakingRate} />
         <SpeakerTimeChart timeline={timeline} />
       </div>
 

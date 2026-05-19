@@ -9,6 +9,8 @@ import { FocusPieChart } from '../components/analysis/FocusPieChart';
 import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
 import { SilenceRatioDonut } from '../components/analysis/SilenceRatioDonut';
 import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
+import { SpeakingRatePieChart } from '../components/analysis/SpeakingRatePieChart';
+import { SpeakingRateLevelChart } from '../components/analysis/SpeakingRateLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { TranscriptPanel } from '../components/analysis/TranscriptPanel';
 import { PageHeader } from '../components/common/PageHeader';
@@ -193,6 +195,17 @@ export function MeetingAnalysisPage() {
   const silenceMs = recordedPayload?.audio?.vadSilenceMs ?? 0;
   const speechRatio = recordedPayload?.audio?.vadSpeechRatioPercent ?? 0;
 
+  // Latest speaking rate (LIVE) from last timeline entry, mirrors FocusPieChart pattern
+  const liveTimeline = analysis.timeline ?? [];
+  const lastLiveEntry = liveTimeline[liveTimeline.length - 1];
+  let latestSpeakingRate = 0;
+  if (lastLiveEntry) {
+    const payload = lastLiveEntry.payload as any;
+    if (typeof payload?.audio?.vadSpeechRatioPercent === 'number') {
+      latestSpeakingRate = payload.audio.vadSpeechRatioPercent;
+    }
+  }
+
   return (
     <main className="page">
       <PageHeader
@@ -208,6 +221,7 @@ export function MeetingAnalysisPage() {
         <AgendaPanel agenda={meeting?.agenda ?? ''} />
         <AiSummaryPanel summary={analysis.aiSummary} />
         {!isRecorded && <FocusLevelChart timeline={analysis.timeline ?? []} />}
+        {!isRecorded && <SpeakingRateLevelChart timeline={analysis.timeline ?? []} />}
       </div>
 
       {isRecorded ? (
@@ -223,6 +237,7 @@ export function MeetingAnalysisPage() {
       ) : (
         <div className="analysis-grid">
           <FocusPieChart focusRate={analysis.focusRate ?? 0} />
+          <SpeakingRatePieChart speakingRate={latestSpeakingRate} />
           <SpeakerTimeChart timeline={analysis.timeline ?? []} />
         </div>
       )}
