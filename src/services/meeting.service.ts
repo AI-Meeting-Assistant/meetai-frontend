@@ -5,6 +5,7 @@ import type {
   MeetingAnalysis,
   MeetingTimelineEntry,
   MeetingType,
+  PaginatedResponse,
 } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -39,8 +40,21 @@ export type EndMeetingResponse = Meeting;
 // API functions
 // ---------------------------------------------------------------------------
 
-export async function listMeetings(): Promise<Meeting[]> {
-  return apiRequest<Meeting[]>('/meetings');
+export interface ListMeetingsParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  meetingType?: string;
+}
+
+export async function listMeetings(params: ListMeetingsParams = {}): Promise<PaginatedResponse<Meeting>> {
+  const query = new URLSearchParams();
+  if (params.page)        query.set('page', String(params.page));
+  if (params.limit)       query.set('limit', String(params.limit));
+  if (params.status)      query.set('status', params.status);
+  if (params.meetingType) query.set('meetingType', params.meetingType);
+  const qs = query.toString();
+  return apiRequest<PaginatedResponse<Meeting>>(`/meetings${qs ? `?${qs}` : ''}`);
 }
 
 export async function createMeeting(payload: CreateMeetingPayload): Promise<CreateMeetingResponse> {

@@ -6,6 +6,7 @@ const ALERT_LABELS: Record<LiveAlert['type'], string> = {
   SPEAKING_RATE_DROP:      'Speaking rate dropped below threshold',
   SPEAKING_RATE_RECOVERED: 'Speaking rate recovered',
   AGENDA_DEVIATION:        'Meeting is deviating from the agenda',
+  AGENDA_FIT:              'Meeting is on track with the agenda',
 };
 
 function formatDetail(alert: LiveAlert): string {

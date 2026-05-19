@@ -4,6 +4,14 @@ export type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED';
 
 export type MeetingType = 'LIVE' | 'RECORDED';
 
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface AuthUser {
   id: string;
   fullName: string;
@@ -66,6 +74,7 @@ export type SseEventType =
   | 'SPEAKING_RATE_DROP'
   | 'SPEAKING_RATE_RECOVERED'
   | 'AGENDA_DEVIATION'
+  | 'AGENDA_FIT'
   | 'MEETING_COMPLETED'
   | 'MEETING_FAILED';
 
