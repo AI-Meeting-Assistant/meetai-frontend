@@ -84,3 +84,84 @@ export async function uploadChunk(payload: UploadChunkPayload): Promise<void> {
     throw new Error(`Media chunk upload failed (HTTP ${response.status})`);
   }
 }
+
+// ─── Recorded meeting upload ──────────────────────────────────────────────────
+
+const MAX_RECORDED_FILE_BYTES = 500 * 1024 * 1024;
+
+export const RECORDED_ACCEPT_EXTENSIONS = [
+  '.mp3', '.wav', '.m4a', '.ogg', '.flac',
+  '.mp4', '.mov', '.mkv', '.webm',
+];
+
+export interface UploadRecordingPayload {
+  meetingId: string;
+  streamTicket: string;
+  file: File;
+  title: string;
+  agenda: string;
+  onProgress?: (percent: number) => void;
+}
+
+export function validateRecordedFile(file: File): string | null {
+  const ext = file.name.includes('.')
+    ? file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+    : '';
+  if (!RECORDED_ACCEPT_EXTENSIONS.includes(ext)) {
+    return `Unsupported file type. Allowed: ${RECORDED_ACCEPT_EXTENSIONS.join(', ')}`;
+  }
+  if (file.size > MAX_RECORDED_FILE_BYTES) {
+    return 'File exceeds maximum size of 500 MB';
+  }
+  if (file.size === 0) {
+    return 'File is empty';
+  }
+  return null;
+}
+
+export function uploadRecording(payload: UploadRecordingPayload): Promise<void> {
+  const { meetingId, streamTicket, file, title, agenda, onProgress } = payload;
+
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('meetingId', meetingId);
+    formData.append('streamTicket', streamTicket);
+    formData.append('title', title);
+    formData.append('agenda', agenda);
+    formData.append('file', file, file.name);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${PYTHON_INGEST_BASE_URL}/ingest-recorded`);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 401) {
+        reject(new StreamUnauthorizedError());
+        return;
+      }
+      if (xhr.status === 400) {
+        try {
+          const body = JSON.parse(xhr.responseText);
+          reject(new StreamBadRequestError(body?.error?.message ?? 'Bad request'));
+        } catch {
+          reject(new StreamBadRequestError());
+        }
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+        return;
+      }
+      reject(new Error(`Recorded upload failed (HTTP ${xhr.status})`));
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.onabort = () => reject(new Error('Upload aborted'));
+    xhr.send(formData);
+  });
+}

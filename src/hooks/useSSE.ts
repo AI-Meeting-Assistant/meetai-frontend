@@ -54,6 +54,10 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
           void showDesktopNotificationForAlert(alert, liveMeetingTitle ?? undefined);
           break;
         }
+
+        case 'MEETING_COMPLETED':
+        case 'MEETING_FAILED':
+          break;
       }
     });
 

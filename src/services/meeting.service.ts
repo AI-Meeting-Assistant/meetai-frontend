@@ -1,5 +1,11 @@
 import { apiRequest } from './api';
-import type { Meeting, MeetingAnalysis, MeetingTimelineEntry } from '../types';
+import type {
+  CreateMeetingResponse,
+  Meeting,
+  MeetingAnalysis,
+  MeetingTimelineEntry,
+  MeetingType,
+} from '../types';
 
 // ---------------------------------------------------------------------------
 // Payloads & response shapes
@@ -9,6 +15,7 @@ export interface CreateMeetingPayload {
   title: string;
   agenda?: string | null;
   timelineResolutionMs?: number;
+  meetingType?: MeetingType;
 }
 
 export interface UpdateMeetingPayload {
@@ -36,8 +43,8 @@ export async function listMeetings(): Promise<Meeting[]> {
   return apiRequest<Meeting[]>('/meetings');
 }
 
-export async function createMeeting(payload: CreateMeetingPayload): Promise<Meeting> {
-  return apiRequest<Meeting>('/meetings', {
+export async function createMeeting(payload: CreateMeetingPayload): Promise<CreateMeetingResponse> {
+  return apiRequest<CreateMeetingResponse>('/meetings', {
     method: 'POST',
     body: payload,
   });

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { MeetingTimelineEntry } from '../../types';
+import type { MeetingTimelineEntry, RecordedAnalysisPayload } from '../../types';
 
 interface SpeakerTimeChartProps {
   timeline: MeetingTimelineEntry[];
@@ -11,8 +11,28 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
     let totalSpeechMs = 0;
 
     for (const entry of timeline) {
-      const payload = entry.payload as any;
+      const payload = entry.payload as Partial<RecordedAnalysisPayload> & {
+        audio?: { vadSpeechMs?: number; speakerLabelsWindow?: Array<{ speaker?: string }> };
+      };
       if (!payload) continue;
+
+      const recordedSpeakers = payload.recorded?.speakers;
+      if (recordedSpeakers && recordedSpeakers.length > 0) {
+        for (const sp of recordedSpeakers) {
+          times[sp.label] = (times[sp.label] || 0) + sp.talkMs;
+          totalSpeechMs += sp.talkMs;
+        }
+        continue;
+      }
+
+      const speakerTalkMs = payload.audio?.speakerTalkMs;
+      if (speakerTalkMs && Object.keys(speakerTalkMs).length > 0) {
+        for (const [speaker, ms] of Object.entries(speakerTalkMs)) {
+          times[speaker] = (times[speaker] || 0) + ms;
+          totalSpeechMs += ms;
+        }
+        continue;
+      }
 
       const speechMs = payload.audio?.vadSpeechMs || 0;
       const speakers = payload.audio?.speakerLabelsWindow || [];
@@ -24,7 +44,6 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
       }
     }
 
-    // Convert to sorted array
     const sorted = Object.entries(times)
       .sort((a, b) => b[1] - a[1])
       .map(([speaker, ms]) => ({ speaker, ms }));
@@ -57,16 +76,6 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
             </div>
             <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px' }} />
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', opacity: 0.7 }}>
-            <div style={{ height: '20px' }} />
-            <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px', width: '50%' }} />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', opacity: 0.5 }}>
-            <div style={{ height: '20px' }} />
-            <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px', width: '80%' }} />
-          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -78,19 +87,23 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
                   <span style={{ fontWeight: 'var(--font-medium)' }}>{speaker}</span>
                   <span style={{ color: 'var(--color-text-muted)' }}>{formatTime(ms)} ({percentage.toFixed(1)}%)</span>
                 </div>
-                <div style={{
-                  height: '8px',
-                  backgroundColor: 'var(--color-border)',
-                  borderRadius: '4px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: `${percentage}%`,
-                    height: '100%',
-                    backgroundColor: 'var(--color-primary)',
+                <div
+                  style={{
+                    height: '8px',
+                    backgroundColor: 'var(--color-border)',
                     borderRadius: '4px',
-                    transition: 'width 0.5s ease'
-                  }} />
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${percentage}%`,
+                      height: '100%',
+                      backgroundColor: 'var(--color-primary)',
+                      borderRadius: '4px',
+                      transition: 'width 0.5s ease',
+                    }}
+                  />
                 </div>
               </div>
             );

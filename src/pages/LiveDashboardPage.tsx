@@ -36,7 +36,7 @@ export function LiveDashboardPage() {
   } = useMeeting();
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const { meeting, analysis, fetchTimeline } = useMeetingDetails(id ?? null);
+  const { meeting, analysis, fetchTimeline, refresh } = useMeetingDetails(id ?? null);
 
   useEffect(() => {
     setActiveMeeting(id ?? null);

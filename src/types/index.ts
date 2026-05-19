@@ -2,6 +2,8 @@ export type UserRole = 'MODERATOR' | 'VIEWER';
 
 export type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED';
 
+export type MeetingType = 'LIVE' | 'RECORDED';
+
 export interface AuthUser {
   id: string;
   fullName: string;
@@ -14,6 +16,7 @@ export interface Meeting {
   id: string;
   title: string;
   agenda: string | null;
+  meetingType?: MeetingType;
   status: MeetingStatus;
   startedAt?: string | null;
   endedAt?: string | null;
@@ -62,7 +65,48 @@ export type SseEventType =
   | 'FOCUS_RECOVERED'
   | 'SPEAKING_RATE_DROP'
   | 'SPEAKING_RATE_RECOVERED'
-  | 'AGENDA_DEVIATION';
+  | 'AGENDA_DEVIATION'
+  | 'MEETING_COMPLETED'
+  | 'MEETING_FAILED';
+
+export interface CreateMeetingResponse extends Meeting {
+  streamTicket?: string;
+  ticketExpiresAt?: string;
+}
+
+export interface RecordedTranscriptLine {
+  speaker: string;
+  startMs: number;
+  endMs: number;
+  text: string;
+}
+
+export interface RecordedSpeaker {
+  label: string;
+  talkMs: number;
+  ratioPercent: number;
+}
+
+export interface RecordedAnalysisPayload {
+  meetingId: string;
+  offsetMs: number;
+  aiSummary?: string | null;
+  audio: FusedDataPayload['audio'] & {
+    speakerTalkMs?: Record<string, number> | null;
+    speakerTalkRatioPercent?: Record<string, number> | null;
+  };
+  video: null;
+  recorded: {
+    durationMs: number;
+    transcriptLines: RecordedTranscriptLine[];
+    speakers: RecordedSpeaker[];
+    adherence: {
+      score: number | null;
+      onTopic: boolean | null;
+      reason: string | null;
+    };
+  };
+}
 
 export interface FusedDataPayload {
   meetingId: string;
@@ -86,7 +130,7 @@ export interface FusedDataPayload {
 }
 
 export interface LiveAlert {
-  type: Exclude<SseEventType, 'CONNECTED' | 'FUSED_DATA'>;
+  type: Exclude<SseEventType, 'CONNECTED' | 'FUSED_DATA' | 'MEETING_COMPLETED' | 'MEETING_FAILED'>;
   offsetMs: number;
   avg?: number;
   contextFit?: number;
