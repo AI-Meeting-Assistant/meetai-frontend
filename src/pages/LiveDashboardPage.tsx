@@ -36,8 +36,10 @@ export function LiveDashboardPage() {
     endMeeting,
     isEnding,
     uploadCount,
+    setPendingSummaryMeetingId,
   } = useMeeting();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
 
   const { meeting, analysis, fetchTimeline, refresh } = useMeetingDetails(id ?? null);
 
@@ -73,9 +75,27 @@ export function LiveDashboardPage() {
   const handleEnd = async () => {
     if (!id) return;
     try {
-      await endMeeting(id);
+      setIsSummarizing(true);
+      const { transcript } = await endMeeting(id);
+
+      if (transcript && streamTicket && meeting) {
+        setPendingSummaryMeetingId(id);
+        try {
+          await meetingService.summarizeMeeting({
+            meetingId: id,
+            streamTicket,
+            transcript,
+            title: meeting.title ?? '',
+            agenda: meeting.agenda ?? '',
+          });
+        } catch {
+          // Python unavailable — summary won't arrive, timeout will show "unavailable"
+        }
+      }
+
       navigate(`/meetings/${id}/analysis`);
     } catch (error) {
+      setIsSummarizing(false);
       // Handled in context
     }
   };
@@ -108,6 +128,25 @@ export function LiveDashboardPage() {
     if (typeof payload?.audio?.vadSpeechRatioPercent === 'number') {
       latestSpeakingRate = payload.audio.vadSpeechRatioPercent;
     }
+  }
+
+  if (isSummarizing) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)',
+        gap: 'var(--space-4)', zIndex: 100,
+      }}>
+        <div style={{
+          width: 40, height: 40,
+          border: '3px solid var(--color-border)',
+          borderTopColor: 'var(--color-primary)',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Ending meeting, generating summary…</p>
+      </div>
+    );
   }
 
   return (

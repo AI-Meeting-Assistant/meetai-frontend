@@ -48,8 +48,12 @@ interface MeetingContextValue {
   liveTranscriptBlocks: LiveTranscriptBlock[];
   liveSseConnected: boolean;
   liveMeetingTitle: string | null;
+  pendingSummaryMeetingId: string | null;
+  receivedSummary: string | null;
   setLiveSseConnected: (connected: boolean) => void;
   setLiveMeetingTitle: (title: string | null) => void;
+  setPendingSummaryMeetingId: (id: string | null) => void;
+  setReceivedSummary: (summary: string | null) => void;
   media: ReturnType<typeof useMediaStream>;
   isStarting: boolean;
   isEnding: boolean;
@@ -60,7 +64,7 @@ interface MeetingContextValue {
   pushFusedData: (data: FusedDataPayload) => void;
   resetMeetingState: () => void;
   startMeeting: (id: string) => Promise<void>;
-  endMeeting: (id: string) => Promise<void>;
+  endMeeting: (id: string) => Promise<{ transcript: string }>;
   uploadCount: number;
 }
 
@@ -78,6 +82,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [isStarting, setIsStarting] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [pendingSummaryMeetingId, setPendingSummaryMeetingId] = useState<string | null>(null);
+  const [receivedSummary, setReceivedSummary] = useState<string | null>(null);
   const [timelineResolutionMs, setTimelineResolutionMs] = useState<number>(DEFAULT_TIMELINE_RESOLUTION_MS);
   const [uploadCount, setUploadCount] = useState(0);
   
@@ -154,6 +160,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setStartError(null);
     setTimelineResolutionMs(DEFAULT_TIMELINE_RESOLUTION_MS);
     setUploadCount(0);
+    setPendingSummaryMeetingId(null);
+    setReceivedSummary(null);
     stopMedia();
     void clearDesktopNotifications();
   }, [stopMedia]);
@@ -200,17 +208,17 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     }
   }, [media, timelineResolutionMs]);
 
-  const endMeeting = useCallback(async (id: string) => {
-    if (isEnding) return;
+  const endMeeting = useCallback(async (id: string): Promise<{ transcript: string }> => {
+    if (isEnding) return { transcript: '' };
     setIsEnding(true);
     try {
-      await meetingService.endMeeting(id);
+      const result = await meetingService.endMeeting(id);
       media.stop();
-      setTicket(null);
-      setTicketExpiresAt(null);
+      // Keep streamTicket alive — SSE must stay open for SUMMARY_READY
       setLiveTranscriptBlocks([]);
       setLiveSseConnected(false);
       void clearDesktopNotifications();
+      return { transcript: result.transcript ?? '' };
     } catch (error) {
       console.error('Failed to end meeting:', error);
       throw error;
@@ -229,8 +237,12 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       liveTranscriptBlocks,
       liveSseConnected,
       liveMeetingTitle,
+      pendingSummaryMeetingId,
+      receivedSummary,
       setLiveSseConnected,
       setLiveMeetingTitle,
+      setPendingSummaryMeetingId,
+      setReceivedSummary,
       media,
       isStarting,
       isEnding,
@@ -253,6 +265,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       liveTranscriptBlocks,
       liveSseConnected,
       liveMeetingTitle,
+      pendingSummaryMeetingId,
+      receivedSummary,
       media,
       isStarting,
       isEnding,

@@ -33,8 +33,18 @@ export interface StartMeetingResponse {
   ticketExpiresAt: string;
 }
 
-/** POST /meetings/:id/end — returns the completed meeting object. */
-export type EndMeetingResponse = Meeting;
+/** POST /meetings/:id/end — returns the completed meeting object plus aggregated transcript. */
+export interface EndMeetingResponse extends Meeting {
+  transcript?: string;
+}
+
+export interface SummarizeMeetingPayload {
+  meetingId: string;
+  streamTicket: string;
+  transcript: string;
+  title: string;
+  agenda: string;
+}
 
 // ---------------------------------------------------------------------------
 // API functions
@@ -91,6 +101,17 @@ export async function startMeeting(id: string): Promise<StartMeetingResponse> {
 export async function endMeeting(id: string): Promise<EndMeetingResponse> {
   return apiRequest<EndMeetingResponse>(`/meetings/${id}/end`, {
     method: 'POST',
+  });
+}
+
+const PYTHON_BASE_URL = import.meta.env.VITE_PYTHON_INGEST_BASE_URL ?? 'http://localhost:8000';
+
+/** POST /summarize — sends aggregated transcript to Python gateway for AI summary generation. */
+export async function summarizeMeeting(payload: SummarizeMeetingPayload): Promise<void> {
+  await fetch(`${PYTHON_BASE_URL}/summarize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   });
 }
 

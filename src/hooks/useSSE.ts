@@ -10,7 +10,15 @@ interface UseSSEResult {
 
 export function useSSE(meetingId: string | null, token: string | null): UseSSEResult {
   const [connected, setConnected] = useState(false);
-  const { pushLiveAlert, pushFusedData, setLiveSseConnected, liveMeetingTitle } = useMeeting();
+  const {
+    pushLiveAlert,
+    pushFusedData,
+    setLiveSseConnected,
+    liveMeetingTitle,
+    setStreamTicket,
+    setPendingSummaryMeetingId,
+    setReceivedSummary,
+  } = useMeeting();
 
   useEffect(() => {
     if (!meetingId || !token) {
@@ -55,6 +63,24 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
           break;
         }
 
+        case 'AGENDA_FIT': {
+          const alert = {
+            type: parsed.type,
+            offsetMs: parsed['offsetMs'] as number,
+            contextFit: parsed['contextFit'] as number | undefined,
+          } satisfies LiveAlert;
+          pushLiveAlert(alert);
+          break;
+        }
+
+        case 'SUMMARY_READY': {
+          const aiSummary = parsed['aiSummary'] as string;
+          setReceivedSummary(aiSummary);
+          setPendingSummaryMeetingId(null);
+          setStreamTicket(null, null);
+          break;
+        }
+
         case 'MEETING_COMPLETED':
         case 'MEETING_FAILED':
           break;
@@ -68,7 +94,7 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
       setConnected(false);
       setLiveSseConnected(false);
     };
-  }, [meetingId, token, pushLiveAlert, pushFusedData, liveMeetingTitle, setLiveSseConnected]);
+  }, [meetingId, token, pushLiveAlert, pushFusedData, liveMeetingTitle, setLiveSseConnected, setStreamTicket, setPendingSummaryMeetingId, setReceivedSummary]);
 
   useEffect(() => {
     setLiveSseConnected(connected);

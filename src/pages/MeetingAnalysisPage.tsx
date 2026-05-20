@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AgendaPanel } from '../components/analysis/AgendaPanel';
 import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
@@ -36,12 +36,27 @@ export function MeetingAnalysisPage() {
     isStarting,
     isEnding,
     startError,
+    pendingSummaryMeetingId,
+    receivedSummary,
+    setPendingSummaryMeetingId,
   } = useMeeting();
 
   const { analysis, meeting, isLoading, refresh } = useMeetingDetails(id ?? null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [summaryTimedOut, setSummaryTimedOut] = useState(false);
+
+  const isSummaryPending = pendingSummaryMeetingId === id;
+
+  useEffect(() => {
+    if (!isSummaryPending) return;
+    const timer = setTimeout(() => {
+      setPendingSummaryMeetingId(null);
+      setSummaryTimedOut(true);
+    }, 100_000);
+    return () => clearTimeout(timer);
+  }, [isSummaryPending, setPendingSummaryMeetingId]);
 
   const meetingsForSse = useMemo(
     () => (meeting ? [meeting] : []),
@@ -226,7 +241,11 @@ export function MeetingAnalysisPage() {
 
       <div className="analysis-full">
         <AgendaPanel agenda={meeting?.agenda ?? ''} />
-        <AiSummaryPanel summary={analysis.aiSummary} />
+        <AiSummaryPanel
+          summary={receivedSummary ?? analysis.aiSummary}
+          isPending={isSummaryPending}
+          timedOut={summaryTimedOut}
+        />
         {!isRecorded && <FocusLevelChart timeline={analysis.timeline ?? []} />}
         {!isRecorded && <SpeakingRateLevelChart timeline={analysis.timeline ?? []} />}
       </div>

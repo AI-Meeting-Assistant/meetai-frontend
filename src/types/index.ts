@@ -76,7 +76,8 @@ export type SseEventType =
   | 'AGENDA_DEVIATION'
   | 'AGENDA_FIT'
   | 'MEETING_COMPLETED'
-  | 'MEETING_FAILED';
+  | 'MEETING_FAILED'
+  | 'SUMMARY_READY';
 
 export interface CreateMeetingResponse extends Meeting {
   streamTicket?: string;
@@ -142,7 +143,7 @@ export interface FusedDataPayload {
 }
 
 export interface LiveAlert {
-  type: Exclude<SseEventType, 'CONNECTED' | 'FUSED_DATA' | 'MEETING_COMPLETED' | 'MEETING_FAILED'>;
+  type: Exclude<SseEventType, 'CONNECTED' | 'FUSED_DATA' | 'MEETING_COMPLETED' | 'MEETING_FAILED' | 'SUMMARY_READY'>;
   offsetMs: number;
   avg?: number;
   contextFit?: number;

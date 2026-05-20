@@ -10,9 +10,12 @@ import { clearDesktopNotifications } from '../../services/desktopNotifications';
  */
 export function LiveMeetingSseBridge() {
   const { token } = useAuth();
-  const { activeMeetingId, streamTicket } = useMeeting();
+  const { activeMeetingId, streamTicket, pendingSummaryMeetingId } = useMeeting();
 
-  const sseMeetingId = streamTicket && activeMeetingId ? activeMeetingId : null;
+  // Keep SSE alive after navigation by falling back to pendingSummaryMeetingId
+  // so SUMMARY_READY can arrive even after LiveDashboardPage unmounts
+  const effectiveMeetingId = activeMeetingId ?? pendingSummaryMeetingId;
+  const sseMeetingId = streamTicket && effectiveMeetingId ? effectiveMeetingId : null;
   useSSE(sseMeetingId, token);
 
   useEffect(() => {
