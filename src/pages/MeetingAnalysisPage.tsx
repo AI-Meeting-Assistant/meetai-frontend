@@ -15,6 +15,10 @@ import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { TranscriptPanel } from '../components/analysis/TranscriptPanel';
 import { LiveTranscriptPanel } from '../components/dashboard/LiveTranscriptPanel';
 import { buildTranscriptBlocksFromTimeline } from '../utils/liveTranscript';
+import {
+  computeAverageFocusPercent,
+  computeAverageSpeakingRatePercent,
+} from '../utils/timelineMetrics';
 import { PageHeader } from '../components/common/PageHeader';
 import { ConfirmDeleteMeetingModal } from '../components/meetings/ConfirmDeleteMeetingModal';
 import { EditMeetingModal } from '../components/meetings/EditMeetingModal';
@@ -76,6 +80,16 @@ export function MeetingAnalysisPage() {
     if (isRecorded) return [];
     return buildTranscriptBlocksFromTimeline(analysis?.timeline ?? []);
   }, [isRecorded, analysis?.timeline]);
+
+  const liveTimeline = analysis?.timeline ?? [];
+  const averageFocusPercent = useMemo(
+    () => computeAverageFocusPercent(liveTimeline),
+    [liveTimeline],
+  );
+  const averageSpeakingRatePercent = useMemo(
+    () => computeAverageSpeakingRatePercent(liveTimeline),
+    [liveTimeline],
+  );
 
   const handleStartMeeting = async () => {
     if (!id) return;
@@ -217,17 +231,6 @@ export function MeetingAnalysisPage() {
   const silenceMs = recordedPayload?.audio?.vadSilenceMs ?? 0;
   const speechRatio = recordedPayload?.audio?.vadSpeechRatioPercent ?? 0;
 
-  // Latest speaking rate (LIVE) from last timeline entry, mirrors FocusPieChart pattern
-  const liveTimeline = analysis.timeline ?? [];
-  const lastLiveEntry = liveTimeline[liveTimeline.length - 1];
-  let latestSpeakingRate = 0;
-  if (lastLiveEntry) {
-    const payload = lastLiveEntry.payload as any;
-    if (typeof payload?.audio?.vadSpeechRatioPercent === 'number') {
-      latestSpeakingRate = payload.audio.vadSpeechRatioPercent;
-    }
-  }
-
   return (
     <main className="page">
       <PageHeader
@@ -262,8 +265,8 @@ export function MeetingAnalysisPage() {
         </div>
       ) : (
         <div className="analysis-grid">
-          <FocusPieChart focusRate={analysis.focusRate ?? 0} />
-          <SpeakingRatePieChart speakingRate={latestSpeakingRate} />
+          <FocusPieChart focusRate={averageFocusPercent} />
+          <SpeakingRatePieChart speakingRate={averageSpeakingRatePercent} />
           <SpeakerTimeChart timeline={analysis.timeline ?? []} />
         </div>
       )}

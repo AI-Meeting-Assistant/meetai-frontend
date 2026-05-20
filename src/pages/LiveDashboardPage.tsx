@@ -118,7 +118,7 @@ export function LiveDashboardPage() {
   // Compute latest focus rate from the timeline payload
   const timeline = analysis?.timeline ?? [];
   const latestTimelineEntry = timeline[timeline.length - 1];
-  let latestFocusRate = analysis?.focusRate ?? 0;
+  let latestFocusRate = 0;
   let latestSpeakingRate = 0;
   if (latestTimelineEntry) {
     const payload = latestTimelineEntry.payload as Partial<FusedDataPayload> | null;
