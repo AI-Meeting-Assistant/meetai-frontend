@@ -1,9 +1,13 @@
 import { useMemo } from 'react';
-import type { MeetingTimelineEntry, RecordedAnalysisPayload } from '../../types';
+import type { MeetingTimelineEntry, FusedDataPayload, RecordedAnalysisPayload } from '../../types';
 
 interface SpeakerTimeChartProps {
   timeline: MeetingTimelineEntry[];
 }
+
+type SpeakerTimePayload = Partial<FusedDataPayload> & {
+  recorded?: Partial<RecordedAnalysisPayload['recorded']>;
+};
 
 export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
   const speakerTimes = useMemo(() => {
@@ -11,31 +15,33 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
     let totalSpeechMs = 0;
 
     for (const entry of timeline) {
-      const payload = entry.payload as Partial<RecordedAnalysisPayload> & {
-        audio?: { vadSpeechMs?: number; speakerLabelsWindow?: Array<{ speaker?: string }> };
-      };
+      const payload = entry.payload as SpeakerTimePayload | null;
       if (!payload) continue;
 
       const recordedSpeakers = payload.recorded?.speakers;
       if (recordedSpeakers && recordedSpeakers.length > 0) {
         for (const sp of recordedSpeakers) {
-          times[sp.label] = (times[sp.label] || 0) + sp.talkMs;
-          totalSpeechMs += sp.talkMs;
+          if (typeof sp.talkMs === 'number' && sp.talkMs > 0) {
+            times[sp.label] = (times[sp.label] || 0) + sp.talkMs;
+            totalSpeechMs += sp.talkMs;
+          }
         }
         continue;
       }
 
       const speakerTalkMs = payload.audio?.speakerTalkMs;
-      if (speakerTalkMs && Object.keys(speakerTalkMs).length > 0) {
+      if (speakerTalkMs && typeof speakerTalkMs === 'object') {
         for (const [speaker, ms] of Object.entries(speakerTalkMs)) {
-          times[speaker] = (times[speaker] || 0) + ms;
-          totalSpeechMs += ms;
+          if (typeof ms === 'number' && ms > 0) {
+            times[speaker] = (times[speaker] || 0) + ms;
+            totalSpeechMs += ms;
+          }
         }
         continue;
       }
 
       const speechMs = payload.audio?.vadSpeechMs || 0;
-      const speakers = payload.audio?.speakerLabelsWindow || [];
+      const speakers = (payload.audio?.speakerLabelsWindow || []) as Array<{ speaker?: string }>;
 
       if (speechMs > 0) {
         const speaker = speakers.length > 0 ? (speakers[0].speaker || 'UNKNOWN') : 'UNKNOWN';

@@ -16,6 +16,7 @@ import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
 import { SpeakingRatePieChart } from '../components/analysis/SpeakingRatePieChart';
 import { SpeakingRateLevelChart } from '../components/analysis/SpeakingRateLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
+import type { FusedDataPayload } from '../types';
 
 // removed REFRESH_INTERVAL
 
@@ -100,7 +101,7 @@ export function LiveDashboardPage() {
   let latestFocusRate = analysis?.focusRate ?? 0;
   let latestSpeakingRate = 0;
   if (latestTimelineEntry) {
-    const payload = latestTimelineEntry.payload as any;
+    const payload = latestTimelineEntry.payload as Partial<FusedDataPayload> | null;
     if (typeof payload?.video?.focusScore === 'number') {
       latestFocusRate = payload.video.focusScore * 100;
     }

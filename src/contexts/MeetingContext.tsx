@@ -4,7 +4,7 @@ import { useMediaStream } from '../hooks/useMediaStream';
 import type { LiveAlert, FusedDataPayload, LiveTranscriptBlock } from '../types';
 import * as meetingService from '../services/meeting.service';
 import { clearDesktopNotifications } from '../services/desktopNotifications';
-import { parseFusedTranscriptText } from '../utils/liveTranscript';
+import { extractTranscriptLines } from '../utils/liveTranscript';
 
 const DEFAULT_TIMELINE_RESOLUTION_MS = 2000;
 const MAX_LIVE_TRANSCRIPT_BLOCKS = 300;
@@ -115,7 +115,7 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
 
   const pushFusedData = useCallback((data: FusedDataPayload) => {
     setLatestFusedData(data);
-    const lines = parseFusedTranscriptText(data.audio?.transcript);
+    const lines = extractTranscriptLines(data.audio?.transcriptLines, data.audio?.transcript);
     if (lines.length === 0) {
       return;
     }

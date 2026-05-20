@@ -117,24 +117,27 @@ export interface RecordedAnalysisPayload {
   };
 }
 
+export interface TranscriptLine {
+  text: string;
+  speaker: string;
+}
+
 export interface FusedDataPayload {
   meetingId: string;
   offsetMs: number;
   audio: {
+    transcript: string | null;
     vadSpeechMs: number | null;
     vadSilenceMs: number | null;
     vadSpeechRatioPercent: number | null;
-    transcript: string | null;
+    speakerTalkMs: Record<string, number> | null;
+    transcriptLines: TranscriptLine[] | null;
     speakerLabelsWindow: unknown[] | null;
+    speakerTalkRatioPercent: Record<string, number> | null;
   };
   video: {
-    focusScore: number;
-    persons: Array<{
-      personId: number;
-      focusScore: number;
-      speakingRatio: number;
-      frameCount: number;
-    }>;
+    focusScore: number | null;
+    persons: Array<{ personId?: number }>;
   };
 }
 
