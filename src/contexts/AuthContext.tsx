@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthUser, UserRole } from '../types';
+import type { AuthUser } from '../types';
 import * as authService from '../services/auth.service';
 
 interface AuthContextValue {
   token: string | null;
   user: AuthUser | null;
-  login: (email: string, password: string, expectedRole: UserRole) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   register: (payload: authService.RegisterPayload) => Promise<void>;
   logout: () => void;
 }
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:logout', handler);
   }, []);
 
-  const login = async (email: string, password: string, expectedRole: UserRole) => {
-    const result = await authService.login(email, password, expectedRole);
+  const login = async (email: string, password: string) => {
+    const result = await authService.login(email, password);
     setToken(result.token);
     setUser(result.user);
     localStorage.setItem('token', result.token);

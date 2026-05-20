@@ -39,7 +39,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="reg-org">Organization</label>
+        <label htmlFor="reg-org">Organization name</label>
         <input
           id="reg-org"
           type="text"
@@ -59,7 +59,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
         />
       </div>
       <button type="submit" className="btn-primary auth-submit">
-        Create Account
+        Register organization
       </button>
     </form>
   );

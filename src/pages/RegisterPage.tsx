@@ -15,13 +15,13 @@ export function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">Create moderator account</h1>
+        <h1 className="auth-title">Register your organization</h1>
+        <p style={{ color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 'var(--space-4)' }}>
+          Creates a new organization and your administrator account. Add more members later from Team.
+        </p>
         <RegisterForm onSubmit={handleSubmit} />
         <p className="auth-link">
-          Already have an account? <Link to="/login">Moderator sign in</Link>
-        </p>
-        <p className="auth-link">
-          Viewer? <Link to="/viewer/login">Viewer sign in</Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
     </div>

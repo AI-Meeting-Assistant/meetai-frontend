@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import type { AuthUser, UserRole } from '../types';
+import type { AuthUser } from '../types';
 
 export interface LoginResponse {
   token: string;
@@ -13,14 +13,10 @@ export interface RegisterPayload {
   organizationName: string;
 }
 
-export async function login(
-  email: string,
-  password: string,
-  expectedRole: UserRole,
-): Promise<LoginResponse> {
+export async function login(email: string, password: string): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
-    body: { email, password, expectedRole },
+    body: { email, password },
   });
 }
 

@@ -1,14 +1,13 @@
 import type { ReactNode } from 'react';
-import { Navigate, Outlet, createHashRouter, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, createHashRouter } from 'react-router-dom';
 import { AppHeader } from './components/common/AppHeader';
 import { useAuth } from './contexts/AuthContext';
 import { LiveDashboardPage } from './pages/LiveDashboardPage';
-import { ModeratorLoginPage } from './pages/ModeratorLoginPage';
+import { LoginPage } from './pages/LoginPage';
 import { MeetingAnalysisPage } from './pages/MeetingAnalysisPage';
 import { MeetingListPage } from './pages/MeetingListPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { ViewerLoginPage } from './pages/ViewerLoginPage';
 
 function AuthenticatedLayout() {
   return (
@@ -21,24 +20,18 @@ function AuthenticatedLayout() {
   );
 }
 
-function getLoginPath(pathname: string): string {
-  return pathname.startsWith('/viewer') ? '/viewer/login' : '/login';
-}
-
 function PrivateRoute({ children }: { children?: ReactNode }) {
   const { token } = useAuth();
-  const location = useLocation();
   if (!token) {
-    return <Navigate to={getLoginPath(location.pathname)} replace />;
+    return <Navigate to="/login" replace />;
   }
   return children ? <>{children}</> : <Outlet />;
 }
 
 function ModeratorRoute({ children }: { children?: ReactNode }) {
   const { token, user } = useAuth();
-  const location = useLocation();
   if (!token) {
-    return <Navigate to={getLoginPath(location.pathname)} replace />;
+    return <Navigate to="/login" replace />;
   }
   if (user?.role !== 'MODERATOR') {
     return <Navigate to="/meetings" replace />;
@@ -53,8 +46,8 @@ function RootRedirect() {
 
 export const router = createHashRouter([
   { path: '/', element: <RootRedirect /> },
-  { path: '/login', element: <ModeratorLoginPage /> },
-  { path: '/viewer/login', element: <ViewerLoginPage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/viewer/login', element: <Navigate to="/login" replace /> },
   { path: '/register', element: <RegisterPage /> },
   {
     element: (

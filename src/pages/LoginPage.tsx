@@ -2,28 +2,25 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LoginForm } from '../components/auth/LoginForm';
 import { useAuth } from '../contexts/AuthContext';
 
-export function ModeratorLoginPage() {
+export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (email: string, password: string) => {
-    await login(email, password, 'MODERATOR');
+    await login(email, password);
     navigate('/meetings');
   };
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">Moderator sign in</h1>
+        <h1 className="auth-title">Sign in</h1>
         <p style={{ color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 'var(--space-4)' }}>
-          Manage meetings, live sessions, and viewers.
+          Use the email and password provided by your organization.
         </p>
-        <LoginForm onSubmit={handleSubmit} submitLabel="Sign in as moderator" />
+        <LoginForm onSubmit={handleSubmit} submitLabel="Sign in" />
         <p className="auth-link">
-          No account? <Link to="/register">Create organization</Link>
-        </p>
-        <p className="auth-link">
-          Viewer? <Link to="/viewer/login">Viewer sign in</Link>
+          New organization? <Link to="/register">Register your organization</Link>
         </p>
       </div>
     </div>

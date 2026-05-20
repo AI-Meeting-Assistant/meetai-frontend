@@ -76,7 +76,7 @@ export function MeetingListPage() {
             fontSize: 'var(--text-sm)',
           }}
         >
-          Read-only: view meeting analysis and transcripts. Contact a moderator to manage meetings.
+          Read-only: view meeting analysis and transcripts. Contact your organization administrator to manage meetings.
         </p>
       )}
 
@@ -85,7 +85,7 @@ export function MeetingListPage() {
         {user?.role === 'MODERATOR' && (
           <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
             <button type="button" className="btn-secondary" onClick={() => setShowUsersModal(true)}>
-              Users
+              Team
             </button>
             <button type="button" className="btn-secondary" onClick={() => setShowUploadModal(true)}>
               Upload Meeting

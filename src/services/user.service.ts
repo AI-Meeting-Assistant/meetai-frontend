@@ -10,17 +10,18 @@ export interface OrganizationUser {
   createdAt: string;
 }
 
-export interface CreateViewerPayload {
+export interface CreateUserPayload {
   fullName: string;
   email: string;
   password: string;
+  role: UserRole;
 }
 
 export async function listUsers(): Promise<OrganizationUser[]> {
   return apiRequest<OrganizationUser[]>('/users');
 }
 
-export async function createViewer(payload: CreateViewerPayload): Promise<OrganizationUser> {
+export async function createUser(payload: CreateUserPayload): Promise<OrganizationUser> {
   return apiRequest<OrganizationUser>('/users', {
     method: 'POST',
     body: payload,

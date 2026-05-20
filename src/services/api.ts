@@ -11,12 +11,10 @@ interface ApiRequestOptions extends Omit<RequestInit, 'body' | 'method'> {
 }
 
 function forceLogout(): void {
-  const rawUser = localStorage.getItem('user');
-  const role = rawUser ? (JSON.parse(rawUser) as { role?: string }).role : null;
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   window.dispatchEvent(new Event('auth:logout'));
-  window.location.assign(role === 'VIEWER' ? '/viewer/login' : '/login');
+  window.location.assign('/login');
 }
 
 export async function apiRequest<T>(

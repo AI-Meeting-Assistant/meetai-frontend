@@ -8,9 +8,8 @@ export function AppHeader() {
   const roleLabel = user?.role === 'MODERATOR' ? 'Moderator' : user?.role === 'VIEWER' ? 'Viewer' : null;
 
   const handleLogout = () => {
-    const loginPath = user?.role === 'VIEWER' ? '/viewer/login' : '/login';
     logout();
-    window.location.hash = `#${loginPath}`;
+    window.location.hash = '#/login';
   };
   const dropdownRef = useRef<HTMLDivElement>(null);
 
