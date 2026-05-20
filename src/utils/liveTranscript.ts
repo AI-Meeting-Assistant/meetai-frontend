@@ -1,4 +1,10 @@
-import type { LiveTranscriptLine, TranscriptLine } from '../types';
+import type {
+  FusedDataPayload,
+  LiveTranscriptBlock,
+  LiveTranscriptLine,
+  MeetingTimelineEntry,
+  TranscriptLine,
+} from '../types';
 
 /**
  * Extract transcript lines from a fused payload.
@@ -41,4 +47,21 @@ export function parseFusedTranscriptText(transcript: string | null | undefined):
     }
     return [{ speaker: '—', text: trimmed }];
   });
+}
+
+/** Build chunk-grouped transcript blocks from persisted timeline (post-meeting analysis). */
+export function buildTranscriptBlocksFromTimeline(
+  timeline: MeetingTimelineEntry[],
+): LiveTranscriptBlock[] {
+  return [...timeline]
+    .sort((a, b) => a.offsetMs - b.offsetMs)
+    .map((entry) => {
+      const payload = entry.payload as Partial<FusedDataPayload>;
+      const lines = extractTranscriptLines(
+        payload?.audio?.transcriptLines,
+        payload?.audio?.transcript,
+      );
+      return { offsetMs: entry.offsetMs, lines };
+    })
+    .filter((block) => block.lines.length > 0);
 }

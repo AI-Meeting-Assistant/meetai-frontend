@@ -13,6 +13,8 @@ import { SpeakingRatePieChart } from '../components/analysis/SpeakingRatePieChar
 import { SpeakingRateLevelChart } from '../components/analysis/SpeakingRateLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { TranscriptPanel } from '../components/analysis/TranscriptPanel';
+import { LiveTranscriptPanel } from '../components/dashboard/LiveTranscriptPanel';
+import { buildTranscriptBlocksFromTimeline } from '../utils/liveTranscript';
 import { PageHeader } from '../components/common/PageHeader';
 import { ConfirmDeleteMeetingModal } from '../components/meetings/ConfirmDeleteMeetingModal';
 import { EditMeetingModal } from '../components/meetings/EditMeetingModal';
@@ -54,6 +56,11 @@ export function MeetingAnalysisPage() {
     const entry = analysis?.timeline?.find((t) => t.offsetMs === 0);
     return (entry?.payload ?? null) as RecordedAnalysisPayload | null;
   }, [analysis?.timeline]);
+
+  const liveTranscriptBlocks = useMemo(() => {
+    if (isRecorded) return [];
+    return buildTranscriptBlocksFromTimeline(analysis?.timeline ?? []);
+  }, [isRecorded, analysis?.timeline]);
 
   const handleStartMeeting = async () => {
     if (!id) return;
@@ -248,6 +255,12 @@ export function MeetingAnalysisPage() {
             lines={recordedPayload?.recorded?.transcriptLines ?? []}
             fullTranscript={recordedPayload?.audio?.transcript}
           />
+        </div>
+      )}
+
+      {!isRecorded && (
+        <div style={{ marginBottom: 'var(--space-4)' }}>
+          <LiveTranscriptPanel blocks={liveTranscriptBlocks} />
         </div>
       )}
 
