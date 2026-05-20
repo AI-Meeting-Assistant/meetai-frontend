@@ -4,7 +4,14 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export function AppHeader() {
   const [isDropDownOpen, setIsDropDownOpen] = useState<boolean>(false);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const roleLabel = user?.role === 'MODERATOR' ? 'Moderator' : user?.role === 'VIEWER' ? 'Viewer' : null;
+
+  const handleLogout = () => {
+    const loginPath = user?.role === 'VIEWER' ? '/viewer/login' : '/login';
+    logout();
+    window.location.hash = `#${loginPath}`;
+  };
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +37,14 @@ export function AppHeader() {
 
   return (
     <div className="app-header" ref={dropdownRef}>
+      {roleLabel && (
+        <span
+          className="status-label"
+          style={{ marginRight: 'auto', marginLeft: 'var(--space-4)' }}
+        >
+          {roleLabel}
+        </span>
+      )}
       <button
         className="profile-icon-btn"
         onClick={() => setIsDropDownOpen(!isDropDownOpen)}
@@ -38,7 +53,7 @@ export function AppHeader() {
       </button>
       {isDropDownOpen && (
         <div className="dropdown-menu">
-          <button type="button" onClick={logout}>
+          <button type="button" onClick={handleLogout}>
             Logout
           </button>
         </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CreateMeetingModal } from '../components/meetings/CreateMeetingModal';
 import { MeetingCard } from '../components/meetings/MeetingCard';
 import { UploadMeetingModal } from '../components/meetings/UploadMeetingModal';
+import { UserManagementModal } from '../components/users/UserManagementModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useRecordedProcessingEvents } from '../hooks/useRecordedProcessingEvents';
 import * as meetingService from '../services/meeting.service';
@@ -22,6 +23,7 @@ export function MeetingListPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showUsersModal, setShowUsersModal] = useState(false);
 
   const loadMeetings = useCallback(async (p = page) => {
     const data = await meetingService.listMeetings({
@@ -66,10 +68,25 @@ export function MeetingListPage() {
 
   return (
     <main className="page">
+      {user?.role === 'VIEWER' && (
+        <p
+          style={{
+            color: 'var(--color-text-muted)',
+            margin: '0 0 var(--space-4)',
+            fontSize: 'var(--text-sm)',
+          }}
+        >
+          Read-only: view meeting analysis and transcripts. Contact a moderator to manage meetings.
+        </p>
+      )}
+
       <div className="page-header">
         <h1 style={{ margin: 0 }}>Meetings</h1>
         {user?.role === 'MODERATOR' && (
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            <button type="button" className="btn-secondary" onClick={() => setShowUsersModal(true)}>
+              Users
+            </button>
             <button type="button" className="btn-secondary" onClick={() => setShowUploadModal(true)}>
               Upload Meeting
             </button>
@@ -142,6 +159,10 @@ export function MeetingListPage() {
           onSuccess={() => void loadMeetings()}
           onClose={() => setShowUploadModal(false)}
         />
+      )}
+
+      {showUsersModal && (
+        <UserManagementModal onClose={() => setShowUsersModal(false)} />
       )}
     </main>
   );

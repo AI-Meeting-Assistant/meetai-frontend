@@ -15,10 +15,13 @@ export function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">Create your account</h1>
+        <h1 className="auth-title">Create moderator account</h1>
         <RegisterForm onSubmit={handleSubmit} />
         <p className="auth-link">
-          Already have an account? <Link to="/login">Sign in</Link>
+          Already have an account? <Link to="/login">Moderator sign in</Link>
+        </p>
+        <p className="auth-link">
+          Viewer? <Link to="/viewer/login">Viewer sign in</Link>
         </p>
       </div>
     </div>

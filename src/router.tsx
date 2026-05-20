@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
-import { Navigate, Outlet, createHashRouter } from 'react-router-dom';
+import { Navigate, Outlet, createHashRouter, useLocation } from 'react-router-dom';
 import { AppHeader } from './components/common/AppHeader';
 import { useAuth } from './contexts/AuthContext';
 import { LiveDashboardPage } from './pages/LiveDashboardPage';
-import { LoginPage } from './pages/LoginPage';
+import { ModeratorLoginPage } from './pages/ModeratorLoginPage';
 import { MeetingAnalysisPage } from './pages/MeetingAnalysisPage';
 import { MeetingListPage } from './pages/MeetingListPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ViewerLoginPage } from './pages/ViewerLoginPage';
 
 function AuthenticatedLayout() {
   return (
@@ -20,18 +21,24 @@ function AuthenticatedLayout() {
   );
 }
 
+function getLoginPath(pathname: string): string {
+  return pathname.startsWith('/viewer') ? '/viewer/login' : '/login';
+}
+
 function PrivateRoute({ children }: { children?: ReactNode }) {
   const { token } = useAuth();
+  const location = useLocation();
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={getLoginPath(location.pathname)} replace />;
   }
   return children ? <>{children}</> : <Outlet />;
 }
 
 function ModeratorRoute({ children }: { children?: ReactNode }) {
   const { token, user } = useAuth();
+  const location = useLocation();
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={getLoginPath(location.pathname)} replace />;
   }
   if (user?.role !== 'MODERATOR') {
     return <Navigate to="/meetings" replace />;
@@ -46,7 +53,8 @@ function RootRedirect() {
 
 export const router = createHashRouter([
   { path: '/', element: <RootRedirect /> },
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', element: <ModeratorLoginPage /> },
+  { path: '/viewer/login', element: <ViewerLoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   {
     element: (
@@ -57,10 +65,12 @@ export const router = createHashRouter([
     children: [
       { path: '/meetings', element: <MeetingListPage /> },
       { path: '/meetings/:id/analysis', element: <MeetingAnalysisPage /> },
-      { path: '/settings', element: <SettingsPage /> },
       {
         element: <ModeratorRoute />,
-        children: [{ path: '/meetings/:id/live', element: <LiveDashboardPage /> }],
+        children: [
+          { path: '/meetings/:id/live', element: <LiveDashboardPage /> },
+          { path: '/settings', element: <SettingsPage /> },
+        ],
       },
     ],
   },
