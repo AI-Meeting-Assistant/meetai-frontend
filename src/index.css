@@ -711,3 +711,80 @@ textarea {
     transform: rotate(360deg);
   }
 }
+
+/* ─── Print / PDF Export ─────────────────────────────────────────────────── */
+@media print {
+  /* Reset page background and remove unneeded chrome */
+  body {
+    background: #fff !important;
+    color: #1E293B !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide interactive / nav elements */
+  .app-header,
+  .header-actions,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .dropdown-menu,
+  .profile-icon-btn,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  /* Flatten layout for continuous flow */
+  .page {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove card shadows / borders — keep structure readable */
+  .panel,
+  .card,
+  .card-clickable {
+    box-shadow: none !important;
+    border: 1px solid #E2E8F0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure charts stay together */
+  .analysis-grid,
+  .analysis-full {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Keep analysis grid simple for print */
+  .analysis-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Ensure SVG charts / canvas render correctly */
+  svg, canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Force visible overflow for pre blocks */
+  pre {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+  }
+
+  /* Page header — keep title but tweak spacing */
+  .page-header-container {
+    margin-bottom: 16px !important;
+  }
+
+  /* Expand all scroll-constrained containers so full content is visible */
+  .scroll-container {
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+  }
+}
+

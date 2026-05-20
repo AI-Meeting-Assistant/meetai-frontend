@@ -21,7 +21,7 @@ export function LiveTranscriptPanel({ blocks }: LiveTranscriptPanelProps) {
         </span>
       </div>
       <div
-        className="live-transcript-scroll"
+        className="live-transcript-scroll scroll-container"
         style={{
           maxHeight: 'min(40vh, 360px)',
           overflowY: 'auto',

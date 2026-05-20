@@ -222,7 +222,7 @@ export function MeetingAnalysisPage() {
           </button>
         </>
       )}
-      <ExportButton />
+      <ExportButton meetingTitle={meeting?.title} />
     </>
   );
 

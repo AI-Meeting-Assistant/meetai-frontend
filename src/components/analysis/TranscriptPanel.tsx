@@ -16,11 +16,12 @@ export function TranscriptPanel({ lines, fullTranscript }: TranscriptPanelProps)
   const hasLines = lines.length > 0;
 
   return (
-    <div className="panel" style={{ display: 'flex', flexDirection: 'column', maxHeight: 420 }}>
+    <div className="panel scroll-container" style={{ display: 'flex', flexDirection: 'column', maxHeight: 420 }}>
       <div className="panel-header">
         <h3>Transcript</h3>
       </div>
       <div
+        className="scroll-container"
         style={{
           flex: 1,
           overflowY: 'auto',
