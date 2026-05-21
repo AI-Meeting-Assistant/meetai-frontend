@@ -41,10 +41,20 @@ function buildPayload(alert: LiveAlert, meetingTitle?: string): DesktopAlertPayl
     case 'AGENDA_DEVIATION':
       return {
         type: alert.type,
-        title: `${APP_TITLE}: Agenda deviation`,
-        body: `${prefix}Meeting may be off agenda${
+        title: `${APP_TITLE}: Off agenda`,
+        body: `${prefix}Discussion in the last ~30 seconds appears off agenda${
           alert.contextFit !== undefined
-            ? ` (context fit: ${(alert.contextFit * 100).toFixed(0)}%)`
+            ? ` (${(alert.contextFit * 100).toFixed(0)}% context fit)`
+            : ''
+        }.`,
+      };
+    case 'AGENDA_FIT':
+      return {
+        type: alert.type,
+        title: `${APP_TITLE}: Back on agenda`,
+        body: `${prefix}Discussion is on topic again${
+          alert.contextFit !== undefined
+            ? ` (${(alert.contextFit * 100).toFixed(0)}% context fit)`
             : ''
         }.`,
       };

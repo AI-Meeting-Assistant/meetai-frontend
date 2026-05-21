@@ -1,6 +1,6 @@
 import { Notification } from 'electron';
 
-export type DesktopAlertKind = 'focus' | 'speaking';
+export type DesktopAlertKind = 'focus' | 'speaking' | 'agenda';
 
 export interface DesktopAlertPayload {
   type: string;
@@ -37,7 +37,10 @@ class NotificationManager {
         this.showRecovery('speaking', payload.title, payload.body);
         break;
       case 'AGENDA_DEVIATION':
-        this.showBrief(payload.title, payload.body);
+        this.showDrop('agenda', payload.title, payload.body);
+        break;
+      case 'AGENDA_FIT':
+        this.showRecovery('agenda', payload.title, payload.body);
         break;
       default:
         break;
@@ -87,12 +90,6 @@ class NotificationManager {
       }
     }, RECOVERY_AUTO_CLOSE_MS);
     this.recoveryTimers.set(kind, timer);
-  }
-
-  private showBrief(title: string, body: string): void {
-    const notification = new Notification({ title, body });
-    notification.show();
-    setTimeout(() => notification.close(), RECOVERY_AUTO_CLOSE_MS);
   }
 
   private clearRecoveryTimer(kind: DesktopAlertKind): void {

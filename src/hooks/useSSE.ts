@@ -70,6 +70,7 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
             contextFit: parsed['contextFit'] as number | undefined,
           } satisfies LiveAlert;
           pushLiveAlert(alert);
+          void showDesktopNotificationForAlert(alert, liveMeetingTitle ?? undefined);
           break;
         }
 
