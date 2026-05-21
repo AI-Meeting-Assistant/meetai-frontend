@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { MeetingTimelineEntry, FusedDataPayload } from '../../types';
 import { LineChartCard } from './LineChartCard';
 import { computeAverageSpeakingRatePercent } from '../../utils/timelineMetrics';
+import { metricColors } from '../common/colors';
 
 export function SpeakingRateLevelChart({ timeline }: { timeline: MeetingTimelineEntry[] }) {
   const data = useMemo(() => (
@@ -20,7 +21,7 @@ export function SpeakingRateLevelChart({ timeline }: { timeline: MeetingTimeline
     <LineChartCard
       title="Speaking Activity"
       data={data}
-      color="var(--accent)"
+      color={metricColors.speaking}
       avg={avg > 0 ? avg : null}
       emptyLabel="No speech data yet."
     />

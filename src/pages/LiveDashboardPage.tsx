@@ -15,6 +15,7 @@ import * as meetingService from '../services/meeting.service';
 import { useAuth } from '../contexts/AuthContext';
 import { useMeeting } from '../contexts/MeetingContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { colors, focusColor, metricColors } from '../components/common/colors';
 import { useMeetingDetails } from '../hooks/useMeetingDetails';
 import { getLatestAgendaPercent } from '../utils/timelineMetrics';
 import type { FusedDataPayload } from '../types';
@@ -46,12 +47,6 @@ function MetricRing({ value, color, size = 90, sw = 6, label }: {
       <span style={{ fontSize: 12, color: 'var(--tx-2)', fontWeight: 500, textAlign: 'center' }}>{label}</span>
     </div>
   );
-}
-
-function focusColor(pct: number) {
-  if (pct >= 75) return 'var(--green)';
-  if (pct >= 50) return 'var(--amber)';
-  return 'var(--red)';
 }
 
 function fmtSec(s: number): string {
@@ -185,7 +180,7 @@ export function LiveDashboardPage() {
       }}>
         <div style={{
           width: 36, height: 36,
-          border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
+          border: '3px solid var(--border)', borderTopColor: colors.accent,
           borderRadius: '50%', animation: 'spin 0.8s linear infinite',
         }} />
         <p style={{ margin: 0, fontSize: 13, color: 'var(--tx-3)' }}>Ending meeting, generating summary…</p>
@@ -209,10 +204,10 @@ export function LiveDashboardPage() {
         {/* LIVE indicator */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{
-            width: 7, height: 7, borderRadius: '50%', background: 'var(--red)',
+            width: 7, height: 7, borderRadius: '50%', background: colors.red,
             display: 'block', animation: 'pulse 1.4s ease-in-out infinite',
           }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--red)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: colors.red, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             Live
           </span>
         </div>
@@ -234,17 +229,17 @@ export function LiveDashboardPage() {
             <span key={label} style={{
               display: 'flex', alignItems: 'center', gap: 5,
               fontSize: 11, fontWeight: 500,
-              color: 'var(--green)', background: 'var(--green-bg)',
+              color: colors.green, background: colors.greenBg,
               padding: '2px 8px', borderRadius: 'var(--r-sm)', whiteSpace: 'nowrap',
             }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)', display: 'block' }} />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: colors.green, display: 'block' }} />
               {label}
             </span>
           ))}
         </div>
 
         {media.streamError && (
-          <span style={{ fontSize: 12, color: 'var(--red)' }}>{media.streamError}</span>
+          <span style={{ fontSize: 12, color: colors.red }}>{media.streamError}</span>
         )}
 
         <div style={{ flex: 1 }} />
@@ -349,11 +344,11 @@ export function LiveDashboardPage() {
               Live Metrics
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <MetricRing value={latestSpeakingRate} color="var(--accent)"              label="Speaking Rate" />
+              <MetricRing value={latestSpeakingRate} color={metricColors.speaking} label="Speaking Rate" />
               <MetricRing value={latestFocusRate}    color={focusColor(latestFocusRate)} label="Focus Level" />
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-              <MetricRing value={agendaPiePercent} color="var(--green)" label="Agenda Adherence" />
+              <MetricRing value={agendaPiePercent} color={metricColors.agenda} label="Agenda Adherence" />
             </div>
           </div>
 

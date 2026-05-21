@@ -1,12 +1,7 @@
 import type { MeetingAlert } from '../../types';
+import { alertSeverityStyle } from '../common/colors';
 
-function severityStyle(severity: string): { bg: string; border: string } {
-  switch (severity.toUpperCase()) {
-    case 'HIGH':   return { bg: 'var(--red-bg)',   border: 'var(--red)' };
-    case 'MEDIUM': return { bg: 'var(--amber-bg)', border: 'var(--amber)' };
-    default:       return { bg: 'var(--bg-subtle)', border: 'var(--tx-3)' };
-  }
-}
+const severityStyle = alertSeverityStyle;
 
 export function AlertsLog({ alerts }: { alerts: MeetingAlert[] }) {
   return (

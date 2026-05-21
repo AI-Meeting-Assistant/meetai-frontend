@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { MeetingTimelineEntry } from '../../types';
+import { metricColors } from '../common/colors';
 import { AgendaPanel } from './AgendaPanel';
 import { AiSummaryPanel } from './AiSummaryPanel';
 import { AgendaAdherenceLevelChart } from './AgendaAdherenceLevelChart';
@@ -59,12 +60,6 @@ function KpiCard({ label, value, color, sub }: { label: string; value: number; c
   );
 }
 
-function focusColor(pct: number) {
-  if (pct >= 75) return 'var(--green)';
-  if (pct >= 50) return 'var(--amber)';
-  return 'var(--red)';
-}
-
 // ── Main section ──────────────────────────────────────────────────────────────
 
 export function MeetingMetricsSection({
@@ -73,23 +68,20 @@ export function MeetingMetricsSection({
 }: MeetingMetricsSectionProps) {
   return (
     <>
-      {/* KPI row — 3 metric rings */}
+      {/* KPI row — static colors (no semantic judgment on completed data) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <KpiCard label="Avg. Focus"          value={focusPiePercent}    color={focusColor(focusPiePercent)}  sub="Across all participants" />
-        <KpiCard label="Speaking Activity"   value={speakingPiePercent} color="var(--accent)"                sub="Active speaking fraction" />
-        <KpiCard label="Agenda Adherence"    value={agendaPiePercent}   color="var(--green)"                 sub="On-topic score" />
+        <KpiCard label="Avg. Focus"        value={focusPiePercent}    color={metricColors.focus}    sub="Across all participants" />
+        <KpiCard label="Speaking Activity" value={speakingPiePercent} color={metricColors.speaking} sub="Active speaking fraction" />
+        <KpiCard label="Agenda Adherence"  value={agendaPiePercent}   color={metricColors.agenda}   sub="On-topic score" />
       </div>
 
       {/* Two-column layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, marginBottom: 16 }}>
-        {/* Left — agenda, summary, transcript */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <AgendaPanel agenda={agenda} />
           <AiSummaryPanel summary={summary} isPending={summaryPending} timedOut={summaryTimedOut} />
           {transcriptPanel}
         </div>
-
-        {/* Right — participant stats + speaker time */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ParticipantStatsPanel timeline={timeline} />
           <SpeakerTimeChart timeline={timeline} />

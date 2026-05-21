@@ -1,4 +1,5 @@
 import type { LiveAlert } from '../../types';
+import { colors } from '../common/colors';
 
 const ALERT_LABELS: Record<LiveAlert['type'], string> = {
   FOCUS_DROP:              'Focus dropped below threshold',
@@ -35,7 +36,7 @@ export function AlertFeed({ alerts }: { alerts: LiveAlert[] }) {
         {alerts.length > 0 && (
           <span style={{
             fontSize: 10, fontWeight: 700,
-            background: 'var(--amber-bg)', color: 'var(--amber)',
+            background: colors.amberBg, color: colors.amber,
             padding: '1px 6px', borderRadius: 'var(--r-sm)',
           }}>
             {alerts.length}
@@ -53,8 +54,8 @@ export function AlertFeed({ alerts }: { alerts: LiveAlert[] }) {
             return (
               <div key={`${alert.type}-${alert.offsetMs}`} style={{
                 padding: '9px 11px',
-                background: isWarning ? 'var(--amber-bg)' : 'var(--accent-subtle)',
-                border: `1px solid ${isWarning ? 'var(--amber)' : 'var(--accent-border)'}`,
+                background: isWarning ? colors.amberBg : colors.accentSubtle,
+                border: `1px solid ${isWarning ? colors.amber : colors.accentBorder}`,
                 borderLeftWidth: 3,
                 borderRadius: 'var(--r-md)',
                 animation: 'fadeSlideIn 0.2s ease',

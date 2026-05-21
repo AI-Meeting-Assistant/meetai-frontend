@@ -1,3 +1,5 @@
+import { agendaColor } from '../common/colors';
+
 interface AgendaAdherencePieChartProps {
   adherencePercent: number;
   size?: number;
@@ -10,11 +12,6 @@ export function AgendaAdherencePieChart({ adherencePercent, size = 160 }: Agenda
   const clamped = Math.min(100, Math.max(0, adherencePercent));
   const offset = cir * (1 - clamped / 100);
 
-  const color =
-    clamped >= 70 ? 'var(--green)'  :
-    clamped >= 50 ? 'var(--amber)'  :
-    'var(--red)';
-
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx-1)', marginBottom: 20, alignSelf: 'flex-start' }}>
@@ -23,7 +20,7 @@ export function AgendaAdherencePieChart({ adherencePercent, size = 160 }: Agenda
       <div style={{ position: 'relative', width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={agendaColor(clamped)} strokeWidth={stroke}
             strokeDasharray={cir} strokeDashoffset={offset} strokeLinecap="round"
             style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.6s ease' }} />
         </svg>

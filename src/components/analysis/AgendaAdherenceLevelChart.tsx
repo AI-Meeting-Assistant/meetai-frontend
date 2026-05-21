@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { MeetingTimelineEntry } from '../../types';
 import { LineChartCard } from './LineChartCard';
 import { computeAverageAgendaPercent, extractAgendaTimelinePoints } from '../../utils/timelineMetrics';
+import { metricColors } from '../common/colors';
 
 export function AgendaAdherenceLevelChart({ timeline }: { timeline: MeetingTimelineEntry[] }) {
   const data = useMemo(() => (
@@ -14,7 +15,7 @@ export function AgendaAdherenceLevelChart({ timeline }: { timeline: MeetingTimel
     <LineChartCard
       title="Agenda Adherence"
       data={data}
-      color="var(--green)"
+      color={metricColors.agenda}
       avg={avg > 0 ? avg : null}
       emptyLabel="No agenda adherence data yet."
     />

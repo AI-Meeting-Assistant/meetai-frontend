@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { MeetingTimelineEntry } from '../../types';
+import { colors, metricColors } from '../common/colors';
 
 interface ParticipantStat {
   personId: number;
@@ -48,10 +49,8 @@ function buildParticipantStats(timeline: MeetingTimelineEntry[]): ParticipantSta
     .sort((a, b) => b.talkMs - a.talkMs);
 }
 
-function focusColor(pct: number) {
-  if (pct >= 70) return 'var(--green)';
-  if (pct >= 40) return 'var(--amber)';
-  return 'var(--red)';
+function focusColor(_pct: number) {
+  return metricColors.focus;
 }
 
 function formatTalkValue(talkPercent: number, talkMs: number): string {
@@ -90,7 +89,7 @@ function ParticipantRow({ p, isLast }: { p: ParticipantStat; isLast: boolean }) 
           width: 28, height: 28, borderRadius: '50%',
           background: 'var(--accent-subtle)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, color: 'var(--accent)', flexShrink: 0,
+          fontSize: 11, fontWeight: 700, color: colors.accent, flexShrink: 0,
         }}>
           {initial}
         </div>
@@ -108,7 +107,7 @@ function ParticipantRow({ p, isLast }: { p: ParticipantStat; isLast: boolean }) 
             {formatTalkValue(p.talkPercent, p.talkMs)}
           </span>
         </div>
-        <ProgressBar value={p.talkPercent} color="var(--accent)" />
+        <ProgressBar value={p.talkPercent} color={metricColors.speaking} />
       </div>
 
       {/* Focus bar */}

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { MeetingTimelineEntry, FusedDataPayload, RecordedAnalysisPayload, RecordedSpeaker } from '../../types';
+import { metricColors } from '../common/colors';
 
 interface SpeakerTimeChartProps {
   timeline?: MeetingTimelineEntry[];
@@ -100,7 +101,7 @@ export function SpeakerTimeChart({ timeline = [], recordedSpeakers }: SpeakerTim
                 <div style={{ height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{
                     width: `${pct}%`, height: '100%',
-                    background: 'var(--accent)', borderRadius: 3,
+                    background: metricColors.speaking, borderRadius: 3,
                     transition: 'width 0.5s ease',
                   }} />
                 </div>

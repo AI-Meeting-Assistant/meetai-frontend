@@ -1,16 +1,17 @@
 import { useEffect, useRef } from 'react';
 import type { LiveTranscriptBlock } from '../../types';
+import { colors } from '../common/colors';
 
 interface LiveTranscriptPanelProps {
   blocks: LiveTranscriptBlock[];
 }
 
 const SPEAKER_COLORS = [
-  'var(--accent)',
-  'var(--green)',
-  'var(--amber)',
-  'oklch(0.55 0.18 300)',
-  'oklch(0.55 0.18 20)',
+  colors.accent,
+  colors.green,
+  colors.amber,
+  colors.purple,
+  colors.red,
 ];
 
 function speakerColor(speaker: string): string {
@@ -80,7 +81,7 @@ export function LiveTranscriptPanel({ blocks }: LiveTranscriptPanelProps) {
 
         {blocks.length > 0 && (
           <div style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)', display: 'block', animation: 'pulse 1.2s infinite' }} />
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: colors.green, display: 'block', animation: 'pulse 1.2s infinite' }} />
             <span style={{ fontSize: 11, color: 'var(--tx-3)' }}>Listening…</span>
           </div>
         )}
