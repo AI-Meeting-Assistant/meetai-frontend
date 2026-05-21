@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertFeed } from '../components/dashboard/AlertFeed';
 import { EditMeetingModal } from '../components/meetings/EditMeetingModal';
@@ -8,17 +8,10 @@ import { LiveTranscriptPanel } from '../components/dashboard/LiveTranscriptPanel
 import { PageHeader } from '../components/common/PageHeader';
 import { useMeeting } from '../contexts/MeetingContext';
 import { useMeetingDetails } from '../hooks/useMeetingDetails';
-import { AgendaPanel } from '../components/analysis/AgendaPanel';
-import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
-import { FocusPieChart } from '../components/analysis/FocusPieChart';
-import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
-import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
-import { SpeakingRatePieChart } from '../components/analysis/SpeakingRatePieChart';
-import { SpeakingRateLevelChart } from '../components/analysis/SpeakingRateLevelChart';
+import { MeetingMetricsSection } from '../components/analysis/MeetingMetricsSection';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import type { FusedDataPayload } from '../types';
-
-// removed REFRESH_INTERVAL
+import { getLatestAgendaPercent } from '../utils/timelineMetrics';
 
 export function LiveDashboardPage() {
   const navigate = useNavigate();
@@ -37,6 +30,8 @@ export function LiveDashboardPage() {
     isEnding,
     uploadCount,
     setPendingSummaryMeetingId,
+    latestAgendaFitPercent,
+    registerAgendaTimelineRefresh,
   } = useMeeting();
   const [showEditModal, setShowEditModal] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -48,16 +43,29 @@ export function LiveDashboardPage() {
 
     return () => {
       setActiveMeeting(null);
-      // Removed resetMeetingState() from here to avoid React 18 Strict Mode instantly killing the meeting on mount!
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    registerAgendaTimelineRefresh(fetchTimeline);
+    return () => registerAgendaTimelineRefresh(null);
+  }, [fetchTimeline, registerAgendaTimelineRefresh]);
 
   useEffect(() => {
     if (uploadCount > 0) {
       fetchTimeline();
     }
   }, [uploadCount, fetchTimeline]);
+
+  // Text adherence runs ~every 30s without SSE unless deviation/recovery — poll timeline.
+  useEffect(() => {
+    if (!id) return;
+    const interval = setInterval(() => {
+      void fetchTimeline();
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [id, fetchTimeline]);
 
   useEffect(() => {
     if (meeting?.title) {
@@ -94,9 +102,8 @@ export function LiveDashboardPage() {
       }
 
       navigate(`/meetings/${id}/analysis`);
-    } catch (error) {
+    } catch {
       setIsSummarizing(false);
-      // Handled in context
     }
   };
 
@@ -115,7 +122,6 @@ export function LiveDashboardPage() {
     </>
   );
 
-  // Compute latest focus rate from the timeline payload
   const timeline = analysis?.timeline ?? [];
   const latestTimelineEntry = timeline[timeline.length - 1];
   let latestFocusRate = 0;
@@ -129,6 +135,12 @@ export function LiveDashboardPage() {
       latestSpeakingRate = payload.audio.vadSpeechRatioPercent;
     }
   }
+
+  // Timeline is source of truth; SSE cache only fills the gap before the next fetch.
+  const agendaPiePercent = useMemo(
+    () => getLatestAgendaPercent(timeline) ?? latestAgendaFitPercent ?? 0,
+    [timeline, latestAgendaFitPercent],
+  );
 
   if (isSummarizing) {
     return (
@@ -179,19 +191,15 @@ export function LiveDashboardPage() {
         error={media.streamError}
       />
 
-      <div className="analysis-full">
-        <AgendaPanel agenda={meeting?.agenda ?? ''} />
-        <AiSummaryPanel summary={analysis?.aiSummary} />
-        <LiveTranscriptPanel blocks={liveTranscriptBlocks} />
-        <FocusLevelChart timeline={timeline} />
-        <SpeakingRateLevelChart timeline={timeline} />
-      </div>
-
-      <div className="analysis-grid">
-        <FocusPieChart focusRate={latestFocusRate} />
-        <SpeakingRatePieChart speakingRate={latestSpeakingRate} />
-        <SpeakerTimeChart timeline={timeline} />
-      </div>
+      <MeetingMetricsSection
+        timeline={timeline}
+        agenda={meeting?.agenda ?? ''}
+        summary={analysis?.aiSummary}
+        transcriptPanel={<LiveTranscriptPanel blocks={liveTranscriptBlocks} />}
+        focusPiePercent={latestFocusRate}
+        speakingPiePercent={latestSpeakingRate}
+        agendaPiePercent={agendaPiePercent}
+      />
 
       <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>

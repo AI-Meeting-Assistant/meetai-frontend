@@ -683,6 +683,33 @@ textarea {
   gap: var(--space-4);
 }
 
+.analysis-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.analysis-metrics-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.analysis-lines-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .analysis-metrics-2x2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .analysis-footer {
   display: flex;
   justify-content: flex-end;
@@ -753,7 +780,10 @@ textarea {
 
   /* Ensure charts stay together */
   .analysis-grid,
-  .analysis-full {
+  .analysis-full,
+  .analysis-top,
+  .analysis-metrics-2x2,
+  .analysis-lines-stack {
     break-inside: avoid;
     page-break-inside: avoid;
   }

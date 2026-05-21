@@ -18,6 +18,8 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
     setStreamTicket,
     setPendingSummaryMeetingId,
     setReceivedSummary,
+    setLatestAgendaFitFromAlert,
+    refreshAgendaTimeline,
   } = useMeeting();
 
   useEffect(() => {
@@ -50,8 +52,7 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
         case 'FOCUS_DROP':
         case 'FOCUS_RECOVERED':
         case 'SPEAKING_RATE_DROP':
-        case 'SPEAKING_RATE_RECOVERED':
-        case 'AGENDA_DEVIATION': {
+        case 'SPEAKING_RATE_RECOVERED': {
           const alert = {
             type: parsed.type,
             offsetMs: parsed['offsetMs'] as number,
@@ -63,13 +64,31 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
           break;
         }
 
-        case 'AGENDA_FIT': {
+        case 'AGENDA_DEVIATION': {
+          const contextFit = parsed['contextFit'] as number | undefined;
           const alert = {
             type: parsed.type,
             offsetMs: parsed['offsetMs'] as number,
-            contextFit: parsed['contextFit'] as number | undefined,
+            avg: parsed['avg'] as number | undefined,
+            contextFit,
           } satisfies LiveAlert;
           pushLiveAlert(alert);
+          setLatestAgendaFitFromAlert(contextFit);
+          refreshAgendaTimeline();
+          void showDesktopNotificationForAlert(alert, liveMeetingTitle ?? undefined);
+          break;
+        }
+
+        case 'AGENDA_FIT': {
+          const contextFit = parsed['contextFit'] as number | undefined;
+          const alert = {
+            type: parsed.type,
+            offsetMs: parsed['offsetMs'] as number,
+            contextFit,
+          } satisfies LiveAlert;
+          pushLiveAlert(alert);
+          setLatestAgendaFitFromAlert(contextFit);
+          refreshAgendaTimeline();
           void showDesktopNotificationForAlert(alert, liveMeetingTitle ?? undefined);
           break;
         }
@@ -95,7 +114,19 @@ export function useSSE(meetingId: string | null, token: string | null): UseSSERe
       setConnected(false);
       setLiveSseConnected(false);
     };
-  }, [meetingId, token, pushLiveAlert, pushFusedData, liveMeetingTitle, setLiveSseConnected, setStreamTicket, setPendingSummaryMeetingId, setReceivedSummary]);
+  }, [
+    meetingId,
+    token,
+    pushLiveAlert,
+    pushFusedData,
+    liveMeetingTitle,
+    setLiveSseConnected,
+    setStreamTicket,
+    setPendingSummaryMeetingId,
+    setReceivedSummary,
+    setLatestAgendaFitFromAlert,
+    refreshAgendaTimeline,
+  ]);
 
   useEffect(() => {
     setLiveSseConnected(connected);

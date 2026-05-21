@@ -139,6 +139,12 @@ export interface FusedDataPayload {
     focusScore: number | null;
     persons: Array<{ personId?: number }>;
   };
+  context?: {
+    contextFit: number | null;
+    onTopic: boolean | null;
+    reason?: string | null;
+    chunksAnalysed?: number;
+  };
   /** key = diarization speaker label (e.g. "SPEAKER_00"), value = video personId */
   speakerMapping: Record<string, number> | null;
 }

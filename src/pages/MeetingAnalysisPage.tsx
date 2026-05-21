@@ -5,17 +5,15 @@ import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
 import { AlertsLog } from '../components/analysis/AlertsLog';
 import { AudioDurationCard } from '../components/analysis/AudioDurationCard';
 import { ExportButton } from '../components/analysis/ExportButton';
-import { FocusPieChart } from '../components/analysis/FocusPieChart';
-import { FocusLevelChart } from '../components/analysis/FocusLevelChart';
+import { MeetingMetricsSection } from '../components/analysis/MeetingMetricsSection';
 import { SilenceRatioDonut } from '../components/analysis/SilenceRatioDonut';
 import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
-import { SpeakingRatePieChart } from '../components/analysis/SpeakingRatePieChart';
-import { SpeakingRateLevelChart } from '../components/analysis/SpeakingRateLevelChart';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import { TranscriptPanel } from '../components/analysis/TranscriptPanel';
 import { LiveTranscriptPanel } from '../components/dashboard/LiveTranscriptPanel';
 import { buildTranscriptBlocksFromTimeline } from '../utils/liveTranscript';
 import {
+  computeAverageAgendaPercent,
   computeAverageFocusPercent,
   computeAverageSpeakingRatePercent,
 } from '../utils/timelineMetrics';
@@ -88,6 +86,10 @@ export function MeetingAnalysisPage() {
   );
   const averageSpeakingRatePercent = useMemo(
     () => computeAverageSpeakingRatePercent(liveTimeline),
+    [liveTimeline],
+  );
+  const averageAgendaPercent = useMemo(
+    () => computeAverageAgendaPercent(liveTimeline),
     [liveTimeline],
   );
 
@@ -242,48 +244,44 @@ export function MeetingAnalysisPage() {
         error={startError}
       />
 
-      <div className="analysis-full">
-        <AgendaPanel agenda={meeting?.agenda ?? ''} />
-        <AiSummaryPanel
-          summary={receivedSummary ?? analysis.aiSummary}
-          isPending={isSummaryPending}
-          timedOut={summaryTimedOut}
-        />
-        {!isRecorded && <FocusLevelChart timeline={analysis.timeline ?? []} />}
-        {!isRecorded && <SpeakingRateLevelChart timeline={analysis.timeline ?? []} />}
-      </div>
-
       {isRecorded ? (
-        <div className="analysis-grid">
-          <AudioDurationCard durationMs={durationMs} />
-          <SilenceRatioDonut
-            speechRatioPercent={speechRatio}
-            speechMs={speechMs}
-            silenceMs={silenceMs}
-          />
-          <SpeakerTimeChart timeline={analysis.timeline ?? []} />
-        </div>
+        <>
+          <div className="analysis-top">
+            <AgendaPanel agenda={meeting?.agenda ?? ''} />
+            <AiSummaryPanel
+              summary={receivedSummary ?? analysis.aiSummary}
+              isPending={isSummaryPending}
+              timedOut={summaryTimedOut}
+            />
+          </div>
+          <div className="analysis-grid">
+            <AudioDurationCard durationMs={durationMs} />
+            <SilenceRatioDonut
+              speechRatioPercent={speechRatio}
+              speechMs={speechMs}
+              silenceMs={silenceMs}
+            />
+            <SpeakerTimeChart timeline={analysis.timeline ?? []} />
+          </div>
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <TranscriptPanel
+              lines={recordedPayload?.recorded?.transcriptLines ?? []}
+              fullTranscript={recordedPayload?.audio?.transcript}
+            />
+          </div>
+        </>
       ) : (
-        <div className="analysis-grid">
-          <FocusPieChart focusRate={averageFocusPercent} />
-          <SpeakingRatePieChart speakingRate={averageSpeakingRatePercent} />
-          <SpeakerTimeChart timeline={analysis.timeline ?? []} />
-        </div>
-      )}
-
-      {isRecorded && (
-        <div style={{ marginBottom: 'var(--space-4)' }}>
-          <TranscriptPanel
-            lines={recordedPayload?.recorded?.transcriptLines ?? []}
-            fullTranscript={recordedPayload?.audio?.transcript}
-          />
-        </div>
-      )}
-
-      {!isRecorded && (
-        <div style={{ marginBottom: 'var(--space-4)' }}>
-          <LiveTranscriptPanel blocks={liveTranscriptBlocks} />
-        </div>
+        <MeetingMetricsSection
+          timeline={liveTimeline}
+          agenda={meeting?.agenda ?? ''}
+          summary={receivedSummary ?? analysis.aiSummary}
+          summaryPending={isSummaryPending}
+          summaryTimedOut={summaryTimedOut}
+          transcriptPanel={<LiveTranscriptPanel blocks={liveTranscriptBlocks} />}
+          focusPiePercent={averageFocusPercent}
+          speakingPiePercent={averageSpeakingRatePercent}
+          agendaPiePercent={averageAgendaPercent}
+        />
       )}
 
       <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>

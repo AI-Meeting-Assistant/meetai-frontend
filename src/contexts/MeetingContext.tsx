@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { useMediaStream } from '../hooks/useMediaStream';
 import type { LiveAlert, FusedDataPayload, LiveTranscriptBlock } from '../types';
@@ -62,6 +62,10 @@ interface MeetingContextValue {
   setStreamTicket: (ticket: string | null, expiresAt: string | null) => void;
   pushLiveAlert: (alert: LiveAlert) => void;
   pushFusedData: (data: FusedDataPayload) => void;
+  latestAgendaFitPercent: number | null;
+  setLatestAgendaFitFromAlert: (contextFit: number | undefined) => void;
+  registerAgendaTimelineRefresh: (fn: (() => void) | null) => void;
+  refreshAgendaTimeline: () => void;
   resetMeetingState: () => void;
   startMeeting: (id: string) => Promise<void>;
   endMeeting: (id: string) => Promise<{ transcript: string }>;
@@ -86,8 +90,24 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
   const [receivedSummary, setReceivedSummary] = useState<string | null>(null);
   const [timelineResolutionMs, setTimelineResolutionMs] = useState<number>(DEFAULT_TIMELINE_RESOLUTION_MS);
   const [uploadCount, setUploadCount] = useState(0);
-  
+  const [latestAgendaFitPercent, setLatestAgendaFitPercent] = useState<number | null>(null);
+  const agendaTimelineRefreshRef = useRef<(() => void) | null>(null);
+
   const media = useMediaStream(timelineResolutionMs);
+
+  const setLatestAgendaFitFromAlert = useCallback((contextFit: number | undefined) => {
+    if (typeof contextFit === 'number' && Number.isFinite(contextFit)) {
+      setLatestAgendaFitPercent(Math.round(Math.min(1, Math.max(0, contextFit)) * 100));
+    }
+  }, []);
+
+  const registerAgendaTimelineRefresh = useCallback((fn: (() => void) | null) => {
+    agendaTimelineRefreshRef.current = fn;
+  }, []);
+
+  const refreshAgendaTimeline = useCallback(() => {
+    agendaTimelineRefreshRef.current?.();
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -160,6 +180,8 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     setStartError(null);
     setTimelineResolutionMs(DEFAULT_TIMELINE_RESOLUTION_MS);
     setUploadCount(0);
+    setLatestAgendaFitPercent(null);
+    agendaTimelineRefreshRef.current = null;
     setPendingSummaryMeetingId(null);
     setReceivedSummary(null);
     stopMedia();
@@ -251,6 +273,10 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       setStreamTicket,
       pushLiveAlert,
       pushFusedData,
+      latestAgendaFitPercent,
+      setLatestAgendaFitFromAlert,
+      registerAgendaTimelineRefresh,
+      refreshAgendaTimeline,
       resetMeetingState,
       startMeeting,
       endMeeting,
@@ -275,6 +301,10 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       setStreamTicket,
       pushLiveAlert,
       pushFusedData,
+      latestAgendaFitPercent,
+      setLatestAgendaFitFromAlert,
+      registerAgendaTimelineRefresh,
+      refreshAgendaTimeline,
       resetMeetingState,
       startMeeting,
       endMeeting,
