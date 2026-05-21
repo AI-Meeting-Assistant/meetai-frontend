@@ -4,6 +4,7 @@ import { colors } from '../common/colors';
 
 interface LiveTranscriptPanelProps {
   blocks: LiveTranscriptBlock[];
+  showListening?: boolean;
 }
 
 const SPEAKER_COLORS = [
@@ -26,7 +27,7 @@ function formatOffset(ms: number): string {
   return `${m}:${(s % 60).toString().padStart(2, '0')}`;
 }
 
-export function LiveTranscriptPanel({ blocks }: LiveTranscriptPanelProps) {
+export function LiveTranscriptPanel({ blocks, showListening = true }: LiveTranscriptPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new blocks arrive
@@ -37,10 +38,10 @@ export function LiveTranscriptPanel({ blocks }: LiveTranscriptPanelProps) {
   }, [blocks.length]);
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 280 }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 480 }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 0, paddingBottom: 12, borderBottom: '1px solid var(--border)',
+        marginBottom: 0, paddingBottom: 12,
         flexShrink: 0,
       }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx-1)' }}>Live Transcript</span>
@@ -52,7 +53,7 @@ export function LiveTranscriptPanel({ blocks }: LiveTranscriptPanelProps) {
       <div
         ref={scrollRef}
         className="scroll-container"
-        style={{ flex: 1, overflowY: 'auto', maxHeight: 260, paddingTop: 4 }}
+        style={{ flex: 1, overflowY: 'auto', maxHeight: 440, paddingTop: 4 }}
       >
         {blocks.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 12, color: 'var(--tx-3)', fontStyle: 'italic' }}>
@@ -79,7 +80,7 @@ export function LiveTranscriptPanel({ blocks }: LiveTranscriptPanelProps) {
           ))
         )}
 
-        {blocks.length > 0 && (
+        {showListening && blocks.length > 0 && (
           <div style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: colors.green, display: 'block', animation: 'pulse 1.2s infinite' }} />
             <span style={{ fontSize: 11, color: 'var(--tx-3)' }}>Listening…</span>

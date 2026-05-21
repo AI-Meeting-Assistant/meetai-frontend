@@ -317,7 +317,7 @@ export function MeetingAnalysisPage() {
             summary={resolvedSummary}
             summaryPending={isSummaryPending}
             summaryTimedOut={summaryTimedOut}
-            transcriptPanel={<LiveTranscriptPanel blocks={liveTranscriptBlocks} />}
+            transcriptPanel={<LiveTranscriptPanel blocks={liveTranscriptBlocks} showListening={false} />}
             focusPiePercent={averageFocusPercent}
             speakingPiePercent={averageSpeakingRatePercent}
             agendaPiePercent={averageAgendaPercent}
