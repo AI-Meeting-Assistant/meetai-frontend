@@ -70,7 +70,7 @@ export function MeetingMetricsSection({
     <>
       {/* KPI row — static colors (no semantic judgment on completed data) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <KpiCard label="Avg. Focus"        value={focusPiePercent}    color={metricColors.focus}    sub="Across all participants" />
+        <KpiCard label="Average Focus"        value={focusPiePercent}    color={metricColors.focus}    sub="Across all participants" />
         <KpiCard label="Speaking Activity" value={speakingPiePercent} color={metricColors.speaking} sub="Active speaking fraction" />
         <KpiCard label="Agenda Adherence"  value={agendaPiePercent}   color={metricColors.agenda}   sub="On-topic score" />
       </div>
