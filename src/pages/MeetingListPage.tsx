@@ -11,6 +11,30 @@ import type { Meeting, PaginatedResponse } from '../types';
 
 const LIMIT = 10;
 
+function SearchIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function ChevronLeft() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
 export function MeetingListPage() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
@@ -27,17 +51,14 @@ export function MeetingListPage() {
 
   const loadMeetings = useCallback(async (p = page) => {
     const data = await meetingService.listMeetings({
-      page: p,
-      limit: LIMIT,
+      page: p, limit: LIMIT,
       status: status || undefined,
       meetingType: meetingType || undefined,
     });
     setResult(data);
   }, [page, status, meetingType]);
 
-  useEffect(() => {
-    void loadMeetings();
-  }, [loadMeetings]);
+  useEffect(() => { void loadMeetings(); }, [loadMeetings]);
 
   useRecordedProcessingEvents(result?.items ?? [], token, () => void loadMeetings());
 
@@ -67,107 +88,121 @@ export function MeetingListPage() {
   const displayed = (result?.items ?? []).filter(m =>
     m.title.toLowerCase().includes(search.toLowerCase())
   );
-
   const totalPages = result?.totalPages ?? 1;
+  const total = result?.total ?? 0;
 
   return (
     <main className="page">
+      {/* Viewer notice */}
       {user?.role === 'VIEWER' && (
-        <p
-          style={{
-            color: 'var(--color-text-muted)',
-            margin: '0 0 var(--space-4)',
-            fontSize: 'var(--text-sm)',
-          }}
-        >
-          Read-only: view meeting analysis and transcripts. Contact your organization administrator to manage meetings.
-        </p>
+        <div style={{
+          padding: '10px 14px', background: 'var(--accent-subtle)',
+          border: '1px solid var(--accent-border)', borderRadius: 'var(--r-md)',
+          fontSize: 12, color: 'var(--tx-2)', marginBottom: 24,
+        }}>
+          Read-only access — contact your organization administrator to manage meetings.
+        </div>
       )}
 
-      <div className="page-header">
-        <h1 style={{ margin: 0 }}>Meetings</h1>
+      {/* Page header */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: '-0.035em', color: 'var(--tx-1)' }}>
+            Meetings
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--tx-3)' }}>
+            {total} total
+          </p>
+        </div>
         {user?.role === 'MODERATOR' && (
-          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-            <button type="button" className="btn-secondary" onClick={() => setShowUsersModal(true)}>
-              Team
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => setShowUploadModal(true)}>
-              Upload Meeting
-            </button>
-            <button type="button" className="btn-primary" onClick={() => setShowModal(true)}>
-              New Meeting
-            </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="btn-secondary" onClick={() => setShowUsersModal(true)}>Team</button>
+            <button type="button" className="btn-secondary" onClick={() => setShowUploadModal(true)}>Upload Meeting</button>
+            <button type="button" className="btn-primary" onClick={() => setShowModal(true)}>+ New Meeting</button>
           </div>
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder="Search by name..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ flex: '1 1 200px', minWidth: 0 }}
-        />
-        <select value={status} onChange={handleFilterChange(setStatus)}>
-          <option value="">All Statuses</option>
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
+        {/* Search */}
+        <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+          <div style={{
+            position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--tx-3)', pointerEvents: 'none',
+          }}>
+            <SearchIcon />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by title…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ paddingLeft: 34 }}
+          />
+        </div>
+
+        {/* Status filter */}
+        <select
+          value={status}
+          onChange={handleFilterChange(setStatus)}
+          style={{ width: 'auto', flex: 'none' }}
+        >
+          <option value="">All statuses</option>
           <option value="SCHEDULED">Scheduled</option>
           <option value="IN_PROGRESS">In Progress</option>
           <option value="COMPLETED">Completed</option>
         </select>
-        <select value={meetingType} onChange={handleFilterChange(setMeetingType)}>
-          <option value="">All Types</option>
+
+        {/* Type filter */}
+        <select
+          value={meetingType}
+          onChange={handleFilterChange(setMeetingType)}
+          style={{ width: 'auto', flex: 'none' }}
+        >
+          <option value="">All types</option>
           <option value="LIVE">Live</option>
           <option value="RECORDED">Recorded</option>
         </select>
       </div>
 
+      {/* Meeting list */}
       {displayed.length === 0 ? (
-        <p className="empty-state">No meetings found.</p>
+        <div className="empty-state">No meetings match your filters.</div>
       ) : (
         <div className="meeting-list">
-          {displayed.map((meeting) => (
+          {displayed.map(meeting => (
             <MeetingCard key={meeting.id} meeting={meeting} onClick={handleMeetingClick} />
           ))}
         </div>
       )}
 
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={page <= 1}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 12, marginTop: 28,
+        }}>
+          <button type="button" className="btn-secondary" disabled={page <= 1}
             onClick={() => setPage(p => p - 1)}
-          >
-            ← Prev
+            style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ChevronLeft /> Prev
           </button>
-          <span style={{ fontSize: 'var(--text-sm)' }}>Page {page} of {totalPages}</span>
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={page >= totalPages}
+          <span style={{ fontSize: 13, color: 'var(--tx-3)', fontFamily: 'var(--font-mono)' }}>
+            {page} / {totalPages}
+          </span>
+          <button type="button" className="btn-secondary" disabled={page >= totalPages}
             onClick={() => setPage(p => p + 1)}
-          >
-            Next →
+            style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            Next <ChevronRight />
           </button>
         </div>
       )}
 
-      {showModal && (
-        <CreateMeetingModal onCreate={handleCreate} onClose={() => setShowModal(false)} />
-      )}
-
-      {showUploadModal && (
-        <UploadMeetingModal
-          onSuccess={handleUploadSuccess}
-          onClose={() => setShowUploadModal(false)}
-        />
-      )}
-
-      {showUsersModal && (
-        <UserManagementModal onClose={() => setShowUsersModal(false)} />
-      )}
+      {/* Panels — always mounted so exit animation plays */}
+      <CreateMeetingModal open={showModal} onCreate={handleCreate} onClose={() => setShowModal(false)} />
+      <UploadMeetingModal open={showUploadModal} onSuccess={handleUploadSuccess} onClose={() => setShowUploadModal(false)} />
+      <UserManagementModal open={showUsersModal} onClose={() => setShowUsersModal(false)} />
     </main>
   );
 }

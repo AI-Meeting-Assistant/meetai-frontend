@@ -1,74 +1,101 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { SlideOver } from '../common/SlideOver';
 
 interface CreateMeetingModalProps {
+  open: boolean;
   onCreate: (title: string, agenda?: string, timelineResolutionMs?: number) => Promise<void>;
   onClose: () => void;
 }
 
-export function CreateMeetingModal({ onCreate, onClose }: CreateMeetingModalProps) {
-  const [title, setTitle] = useState('');
-  const [agenda, setAgenda] = useState('');
-  const [timelineResolutionMs, setTimelineResolutionMs] = useState('');
+const RESOLUTION_OPTIONS = [
+  { value: '2000',  label: '2 seconds' },
+  { value: '4000',  label: '4 seconds' },
+  { value: '6000',  label: '6 seconds (recommended)' },
+  { value: '10000', label: '10 seconds' },
+];
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+export function CreateMeetingModal({ open, onCreate, onClose }: CreateMeetingModalProps) {
+  const [title, setTitle]           = useState('');
+  const [agenda, setAgenda]         = useState('');
+  const [resolution, setResolution] = useState('6000');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+
+  // Reset form state each time the panel opens
+  useEffect(() => {
+    if (open) {
+      setTitle('');
+      setAgenda('');
+      setResolution('6000');
+      setSubmitting(false);
+      setError(null);
+    }
+  }, [open]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!title.trim()) return;
-    const trimmedResolution = timelineResolutionMs.trim();
-    const parsedResolution = trimmedResolution ? Number(trimmedResolution) : Number.NaN;
-    const resolutionValue = Number.isFinite(parsedResolution) && parsedResolution > 0
-      ? parsedResolution
-      : undefined;
-    await onCreate(title, agenda.trim() || undefined, resolutionValue);
-    onClose();
+    setError(null);
+    setSubmitting(true);
+    try {
+      await onCreate(title.trim(), agenda.trim() || undefined, Number(resolution));
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create meeting');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>New Meeting</h3>
+    <SlideOver
+      open={open}
+      onClose={onClose}
+      title="New Meeting"
+      footer={
+        <>
+          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" form="create-meeting-form" className="btn-primary" disabled={submitting}>
+            {submitting ? 'Creating…' : 'Create Meeting'}
+          </button>
+        </>
+      }
+    >
+      <form id="create-meeting-form" onSubmit={(e) => void handleSubmit(e)}
+        style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <label htmlFor="cm-title" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-2)' }}>Title</label>
+          <input id="cm-title" type="text" placeholder="Q2 Planning"
+            value={title} onChange={e => setTitle(e.target.value)} required />
         </div>
-        <form onSubmit={(e) => void handleSubmit(e)}>
-          <div className="form-group">
-            <label htmlFor="meeting-title">Title</label>
-            <input
-              id="meeting-title"
-              type="text"
-              placeholder="Q2 Planning"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="meeting-agenda">Agenda</label>
-            <textarea
-              id="meeting-agenda"
-              placeholder="Topics to cover…"
-              value={agenda}
-              onChange={(event) => setAgenda(event.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="meeting-timeline-resolution">Timeline resolution (ms)</label>
-            <input
-              id="meeting-timeline-resolution"
-              type="number"
-              min="1"
-              placeholder="2000"
-              value={timelineResolutionMs}
-              onChange={(event) => setTimelineResolutionMs(event.target.value)}
-            />
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary">
-              Create Meeting
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <label htmlFor="cm-agenda" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-2)' }}>Agenda</label>
+          <textarea id="cm-agenda" rows={5} placeholder="Topics to cover…"
+            value={agenda} onChange={e => setAgenda(e.target.value)} style={{ resize: 'vertical' }} />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <label htmlFor="cm-resolution" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-2)' }}>
+            Snapshot interval
+          </label>
+          <select id="cm-resolution" value={resolution} onChange={e => setResolution(e.target.value)}>
+            {RESOLUTION_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{
+          padding: '12px 14px', background: 'var(--bg-subtle)',
+          borderRadius: 'var(--r-md)', fontSize: 12, color: 'var(--tx-3)', lineHeight: 1.6,
+        }}>
+          All audio and video processing runs locally on your device. No media leaves your machine.
+        </div>
+
+        {error && <p style={{ fontSize: 12, color: 'var(--red)', margin: 0 }}>{error}</p>}
+      </form>
+    </SlideOver>
   );
 }

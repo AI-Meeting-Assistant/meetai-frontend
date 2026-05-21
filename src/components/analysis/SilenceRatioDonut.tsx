@@ -15,7 +15,7 @@ export function SilenceRatioDonut({ speechRatioPercent, speechMs, silenceMs }: S
   const silencePct = 100 - speechPct;
 
   return (
-    <div className="panel">
+    <div className="card">
       <div className="panel-header">
         <h3>Speech vs Silence</h3>
       </div>
@@ -25,7 +25,7 @@ export function SilenceRatioDonut({ speechRatioPercent, speechMs, silenceMs }: S
             width: 120,
             height: 120,
             borderRadius: '50%',
-            background: `conic-gradient(var(--color-primary) 0% ${speechPct}%, var(--color-border) ${speechPct}% 100%)`,
+            background: `conic-gradient(var(--accent) 0% ${speechPct}%, var(--border) ${speechPct}% 100%)`,
             flexShrink: 0,
           }}
           aria-hidden
@@ -34,7 +34,7 @@ export function SilenceRatioDonut({ speechRatioPercent, speechMs, silenceMs }: S
           <div>
             <strong>Speech</strong>: {speechPct.toFixed(1)}% ({formatMs(speechMs)})
           </div>
-          <div style={{ color: 'var(--color-text-muted)' }}>
+          <div style={{ color: 'var(--tx-3)' }}>
             <strong>Silence</strong>: {silencePct.toFixed(1)}% ({formatMs(silenceMs)})
           </div>
         </div>

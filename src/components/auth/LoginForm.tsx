@@ -5,7 +5,7 @@ interface LoginFormProps {
   submitLabel?: string;
 }
 
-export function LoginForm({ onSubmit, submitLabel = 'Login' }: LoginFormProps) {
+export function LoginForm({ onSubmit, submitLabel = 'Sign in' }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -13,43 +13,54 @@ export function LoginForm({ onSubmit, submitLabel = 'Login' }: LoginFormProps) {
 
   return (
     <form
-      onSubmit={(event) => {
-        event.preventDefault();
+      onSubmit={(e) => {
+        e.preventDefault();
         setError(null);
         setSubmitting(true);
         void onSubmit(email, password)
           .catch((err: unknown) => {
-            setError(err instanceof Error ? err.message : 'Login failed');
+            setError(err instanceof Error ? err.message : 'Sign in failed');
           })
           .finally(() => setSubmitting(false));
       }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
-      <div className="form-group">
-        <label htmlFor="login-email">Email</label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <label htmlFor="login-email" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-2)' }}>
+          Email
+        </label>
         <input
           id="login-email"
           type="email"
-          placeholder="you@example.com"
+          placeholder="you@company.com"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
-      <div className="form-group">
-        <label htmlFor="login-password">Password</label>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <label htmlFor="login-password" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-2)' }}>
+          Password
+        </label>
         <input
           id="login-password"
-          placeholder="••••••••"
           type="password"
+          placeholder="••••••••"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
+
       {error && (
-        <p className="form-error" style={{ color: 'var(--color-danger)', marginBottom: 'var(--space-3)' }}>
-          {error}
-        </p>
+        <p style={{ fontSize: 12, color: 'var(--red)', margin: 0 }}>{error}</p>
       )}
-      <button type="submit" className="btn-primary auth-submit" disabled={submitting}>
+
+      <button
+        type="submit"
+        className="btn-primary"
+        disabled={submitting}
+        style={{ width: '100%', justifyContent: 'center', padding: '10px 14px', marginTop: 6 }}
+      >
         {submitting ? 'Signing in…' : submitLabel}
       </button>
     </form>

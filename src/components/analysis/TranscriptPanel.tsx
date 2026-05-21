@@ -16,34 +16,28 @@ export function TranscriptPanel({ lines, fullTranscript }: TranscriptPanelProps)
   const hasLines = lines.length > 0;
 
   return (
-    <div className="panel scroll-container" style={{ display: 'flex', flexDirection: 'column', maxHeight: 420 }}>
-      <div className="panel-header">
-        <h3>Transcript</h3>
-      </div>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx-1)', marginBottom: 16 }}>Transcript</div>
       <div
         className="scroll-container"
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-3)',
-          paddingRight: 'var(--space-2)',
-        }}
+        style={{ flex: 1, overflowY: 'auto', maxHeight: 360, display: 'flex', flexDirection: 'column', gap: 0 }}
       >
         {hasLines ? (
-          lines.map((line, index) => (
-            <div key={`${line.startMs}-${index}`}>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginBottom: 2 }}>
+          lines.map((line, i) => (
+            <div key={`${line.startMs}-${i}`} style={{ padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{
+                fontSize: 11, fontWeight: 600, color: 'var(--tx-3)',
+                fontFamily: 'var(--font-mono)', marginBottom: 4, letterSpacing: '0.04em',
+              }}>
                 {line.speaker} · {formatTimestamp(line.startMs)}–{formatTimestamp(line.endMs)}
               </div>
-              <p style={{ margin: 0, fontSize: 'var(--text-sm)' }}>{line.text}</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--tx-2)', lineHeight: 1.65 }}>{line.text}</p>
             </div>
           ))
         ) : fullTranscript ? (
-          <p style={{ margin: 0, fontSize: 'var(--text-sm)', whiteSpace: 'pre-wrap' }}>{fullTranscript}</p>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--tx-2)', whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{fullTranscript}</p>
         ) : (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>No transcript available.</p>
+          <p style={{ color: 'var(--tx-3)', fontSize: 13, fontStyle: 'italic', margin: 0 }}>No transcript available.</p>
         )}
       </div>
     </div>

@@ -1,10 +1,5 @@
 import { useMemo } from 'react';
-import type {
-  MeetingTimelineEntry,
-  FusedDataPayload,
-  RecordedAnalysisPayload,
-  RecordedSpeaker,
-} from '../../types';
+import type { MeetingTimelineEntry, FusedDataPayload, RecordedAnalysisPayload, RecordedSpeaker } from '../../types';
 
 interface SpeakerTimeChartProps {
   timeline?: MeetingTimelineEntry[];
@@ -56,7 +51,6 @@ export function SpeakerTimeChart({ timeline = [], recordedSpeakers }: SpeakerTim
 
         const speechMs = payload.audio?.vadSpeechMs || 0;
         const speakers = (payload.audio?.speakerLabelsWindow || []) as Array<{ speaker?: string }>;
-
         if (speechMs > 0) {
           const speaker = speakers.length > 0 ? (speakers[0].speaker || 'UNKNOWN') : 'UNKNOWN';
           times[speaker] = (times[speaker] || 0) + speechMs;
@@ -76,55 +70,39 @@ export function SpeakerTimeChart({ timeline = [], recordedSpeakers }: SpeakerTim
 
   const formatTime = (ms: number) => {
     if (ms < 1000) return `${ms.toFixed(0)} ms`;
-    const seconds = ms / 1000;
-    if (seconds < 60) return `${seconds.toFixed(1)} s`;
-    const mins = seconds / 60;
-    return `${mins.toFixed(1)} min`;
+    const s = ms / 1000;
+    if (s < 60) return `${s.toFixed(1)} s`;
+    return `${(s / 60).toFixed(1)} min`;
   };
 
   return (
-    <div className="panel" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="panel-header" style={{ marginBottom: 'var(--space-4)' }}>
-        <h3>Speaker Time Chart</h3>
-      </div>
+    <div className="card">
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx-1)', marginBottom: 16 }}>Speaker Time</div>
 
       {sorted.length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', flex: 1, justifyContent: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', opacity: 0.8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
-              <span style={{ fontWeight: 'var(--font-medium)', color: 'var(--color-text-muted)' }}>Waiting for speakers...</span>
-              <span style={{ color: 'var(--color-text-muted)' }}>0 s (0.0%)</span>
-            </div>
-            <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px' }} />
-          </div>
-        </div>
+        <p style={{ fontSize: 13, color: 'var(--tx-3)', fontStyle: 'italic', margin: 0 }}>
+          Waiting for speakers…
+        </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {sorted.map(({ speaker, ms }) => {
-            const percentage = totalSpeechMs > 0 ? (ms / totalSpeechMs) * 100 : 0;
+            const pct = totalSpeechMs > 0 ? (ms / totalSpeechMs) * 100 : 0;
             return (
-              <div key={speaker} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
-                  <span style={{ fontWeight: 'var(--font-medium)' }}>{speaker}</span>
-                  <span style={{ color: 'var(--color-text-muted)' }}>{formatTime(ms)} ({percentage.toFixed(1)}%)</span>
+              <div key={speaker}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ fontSize: 12, color: 'var(--tx-2)', fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
+                    {speaker}
+                  </span>
+                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--tx-3)' }}>
+                    {formatTime(ms)} ({pct.toFixed(1)}%)
+                  </span>
                 </div>
-                <div
-                  style={{
-                    height: '8px',
-                    backgroundColor: 'var(--color-border)',
-                    borderRadius: '4px',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${percentage}%`,
-                      height: '100%',
-                      backgroundColor: 'var(--color-primary)',
-                      borderRadius: '4px',
-                      transition: 'width 0.5s ease',
-                    }}
-                  />
+                <div style={{ height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${pct}%`, height: '100%',
+                    background: 'var(--accent)', borderRadius: 3,
+                    transition: 'width 0.5s ease',
+                  }} />
                 </div>
               </div>
             );

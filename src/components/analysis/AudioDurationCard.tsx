@@ -15,7 +15,7 @@ function formatDuration(ms: number): string {
 
 export function AudioDurationCard({ durationMs }: AudioDurationCardProps) {
   return (
-    <div className="panel">
+    <div className="card">
       <div className="panel-header">
         <h3>Duration</h3>
       </div>

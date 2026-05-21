@@ -22,20 +22,14 @@ function AuthenticatedLayout() {
 
 function PrivateRoute({ children }: { children?: ReactNode }) {
   const { token } = useAuth();
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!token) return <Navigate to="/login" replace />;
   return children ? <>{children}</> : <Outlet />;
 }
 
 function ModeratorRoute({ children }: { children?: ReactNode }) {
   const { token, user } = useAuth();
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-  if (user?.role !== 'MODERATOR') {
-    return <Navigate to="/meetings" replace />;
-  }
+  if (!token) return <Navigate to="/login" replace />;
+  if (user?.role !== 'MODERATOR') return <Navigate to="/meetings" replace />;
   return children ? <>{children}</> : <Outlet />;
 }
 
@@ -49,6 +43,20 @@ export const router = createHashRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/viewer/login', element: <Navigate to="/login" replace /> },
   { path: '/register', element: <RegisterPage /> },
+
+  // Live dashboard — full-height layout, no AppHeader wrapper
+  {
+    path: '/meetings/:id/live',
+    element: (
+      <PrivateRoute>
+        <ModeratorRoute>
+          <LiveDashboardPage />
+        </ModeratorRoute>
+      </PrivateRoute>
+    ),
+  },
+
+  // Standard authenticated layout (AppHeader + scrollable content)
   {
     element: (
       <PrivateRoute>
@@ -61,7 +69,6 @@ export const router = createHashRouter([
       {
         element: <ModeratorRoute />,
         children: [
-          { path: '/meetings/:id/live', element: <LiveDashboardPage /> },
           { path: '/settings', element: <SettingsPage /> },
         ],
       },

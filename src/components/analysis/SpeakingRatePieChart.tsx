@@ -1,75 +1,34 @@
-
 interface SpeakingRatePieChartProps {
-  speakingRate: number; // 0 to 100
+  speakingRate: number;
+  size?: number;
 }
 
-export function SpeakingRatePieChart({ speakingRate }: SpeakingRatePieChartProps) {
-  const radius = 80;
-  const stroke = 14;
-  const normalizedRadius = radius - stroke / 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
+export function SpeakingRatePieChart({ speakingRate, size = 160 }: SpeakingRatePieChartProps) {
+  const stroke = Math.max(8, Math.round(size * 0.09));
+  const r = (size - stroke) / 2;
+  const cir = 2 * Math.PI * r;
   const clamped = Math.min(100, Math.max(0, speakingRate));
-  const strokeDashoffset = circumference - (clamped / 100) * circumference;
+  const offset = cir * (1 - clamped / 100);
 
-  // Healthy speaking-rate band: 40–75% ideal, 25–85% acceptable, else off
-  const strokeColor =
-    clamped >= 40 && clamped <= 75 ? 'var(--color-success)' :
-    clamped >= 25 && clamped <= 85 ? 'var(--color-warning)' :
-    'var(--color-danger)';
+  const color =
+    clamped >= 40 && clamped <= 75 ? 'var(--green)'  :
+    clamped >= 25 && clamped <= 85 ? 'var(--amber)'  :
+    'var(--red)';
 
   return (
-    <div className="panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="panel-header" style={{ width: '100%', marginBottom: 'var(--space-6)' }}>
-        <h3>Speaking Rate</h3>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx-1)', marginBottom: 20, alignSelf: 'flex-start' }}>
+        Speaking Rate
       </div>
-
-      <div style={{ position: 'relative', width: radius * 2, height: radius * 2 }}>
-        <svg
-          height={radius * 2}
-          width={radius * 2}
-          style={{ transform: 'rotate(-90deg)' }}
-        >
-          <circle
-            stroke="var(--color-border)"
-            fill="transparent"
-            strokeWidth={stroke}
-            r={normalizedRadius}
-            cx={radius}
-            cy={radius}
-          />
-          <circle
-            stroke={strokeColor}
-            fill="transparent"
-            strokeWidth={stroke}
-            strokeDasharray={circumference + ' ' + circumference}
-            style={{
-              strokeDashoffset,
-              transition: 'stroke-dashoffset 1s ease-in-out, stroke 1s ease-in-out',
-            }}
-            strokeLinecap="round"
-            r={normalizedRadius}
-            cx={radius}
-            cy={radius}
-          />
+      <div style={{ position: 'relative', width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+            strokeDasharray={cir} strokeDashoffset={offset} strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.6s ease' }} />
         </svg>
-
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <span style={{
-            fontSize: 'var(--text-2xl)',
-            fontWeight: 'var(--font-bold)',
-            color: 'var(--color-text)',
-            lineHeight: 1,
-          }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: size / 5.5, fontWeight: 600, color: 'var(--tx-1)' }}>
             {Math.round(clamped)}%
           </span>
         </div>

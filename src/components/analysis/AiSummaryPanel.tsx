@@ -7,41 +7,29 @@ interface AiSummaryPanelProps {
 }
 
 export function AiSummaryPanel({ summary, isPending, timedOut }: AiSummaryPanelProps) {
-  const content = () => {
-    if (isPending) {
-      return (
-        <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontStyle: 'italic', color: 'var(--color-text-muted)' }}>
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx-1)' }}>AI Summary</div>
+      </div>
+
+      {isPending ? (
+        <p style={{ margin: 0, fontSize: 13, fontStyle: 'italic', color: 'var(--tx-3)' }}>
           Generating summary…
         </p>
-      );
-    }
-    if (timedOut && !summary) {
-      return (
-        <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontStyle: 'italic', color: 'var(--color-text-muted)' }}>
+      ) : timedOut && !summary ? (
+        <p style={{ margin: 0, fontSize: 13, fontStyle: 'italic', color: 'var(--tx-3)' }}>
           Summary unavailable.
         </p>
-      );
-    }
-    if (!summary) {
-      return (
-        <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontStyle: 'italic', color: 'var(--color-text-muted)' }}>
+      ) : !summary ? (
+        <p style={{ margin: 0, fontSize: 13, fontStyle: 'italic', color: 'var(--tx-3)' }}>
           Summary not yet generated.
         </p>
-      );
-    }
-    return (
-      <div className="ai-summary-body">
-        <ReactMarkdown>{summary}</ReactMarkdown>
-      </div>
-    );
-  };
-
-  return (
-    <section className="panel">
-      <div className="panel-header">
-        <h3>AI Summary</h3>
-      </div>
-      {content()}
-    </section>
+      ) : (
+        <div className="ai-summary-body">
+          <ReactMarkdown>{summary}</ReactMarkdown>
+        </div>
+      )}
+    </div>
   );
 }
