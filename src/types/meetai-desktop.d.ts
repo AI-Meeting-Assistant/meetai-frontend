@@ -10,7 +10,7 @@ export interface MeetaiDesktopApi {
     handleAlert: (payload: DesktopAlertPayload) => Promise<void>;
     clearAll: () => Promise<void>;
   };
-  exportPdf: (options?: { suggestedName?: string }) => Promise<{
+  exportPdf: (options?: { suggestedName?: string; reportData?: unknown }) => Promise<{
     success: boolean;
     filePath?: string;
     error?: string;

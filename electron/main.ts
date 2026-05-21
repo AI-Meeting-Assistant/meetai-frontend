@@ -1,8 +1,9 @@
-import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, session } from 'electron';
+import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, session, nativeTheme } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 import { notificationManager, type DesktopAlertPayload } from './notificationManager';
+import { generatePdf, type PdfReportData } from './pdfGenerator';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname, '..');
@@ -11,6 +12,17 @@ const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let mainWindow: BrowserWindow | null = null;
+
+function registerThemeIpc(): void {
+  ipcMain.handle('theme:set', (_event, theme: 'light' | 'dark') => {
+    nativeTheme.themeSource = theme;
+
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#2E2E2E' : '#ffffff';
+
+    mainWindow?.setBackgroundColor(bgColor);
+  });
+}
 
 function registerNotificationIpc(): void {
   ipcMain.handle('notifications:is-supported', () => notificationManager.isSupported());
@@ -27,21 +39,21 @@ function registerNotificationIpc(): void {
 function registerExportIpc(): void {
   ipcMain.handle(
     'export:print-to-pdf',
-    async (_event, options?: { suggestedName?: string }) => {
+    async (_event, payload?: { suggestedName?: string; reportData?: PdfReportData }) => {
       const win = BrowserWindow.getFocusedWindow() ?? mainWindow;
       if (!win) {
         return { success: false, error: 'No active window' };
       }
 
-      try {
-        const pdfBuffer = await win.webContents.printToPDF({
-          landscape: true,
-          printBackground: true,
-          margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 },
-        });
+      if (!payload?.reportData) {
+        return { success: false, error: 'No report data provided' };
+      }
 
-        const defaultName = options?.suggestedName
-          ? `${options.suggestedName.replace(/[<>:"/\\|?*]/g, '_')}.pdf`
+      try {
+        const pdfBuffer = await generatePdf(payload.reportData);
+
+        const defaultName = payload.suggestedName
+          ? `${payload.suggestedName.replace(/[<>:"/\\|?*]/g, '_')}.pdf`
           : 'MeetAI_Report.pdf';
 
         const { canceled, filePath } = await dialog.showSaveDialog(win, {
@@ -65,9 +77,12 @@ function registerExportIpc(): void {
 }
 
 function createWindow() {
+  const isDark = nativeTheme.shouldUseDarkColors;
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    backgroundColor: isDark ? '#2E2E2E' : '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -75,6 +90,9 @@ function createWindow() {
       backgroundThrottling: false,
     },
   });
+
+  // Hide the native menu bar (Alt will still show it on Windows if not careful)
+  mainWindow.setMenuBarVisibility(false);
 
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
     const allowedPermissions = ['media', 'audioCapture', 'display-capture', 'notifications'];
@@ -104,6 +122,7 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.meetai.desktop');
 }
 
+registerThemeIpc();
 registerNotificationIpc();
 registerExportIpc();
 

@@ -266,7 +266,23 @@ export function MeetingAnalysisPage() {
           <button type="button" className="btn-danger"    style={{ fontSize: 13 }} onClick={() => setShowDeleteModal(true)}>Delete</button>
         </>
       )}
-      <ExportButton meetingTitle={meeting?.title} />
+      <ExportButton
+        meetingTitle={meeting?.title}
+        meetingDate={meeting?.createdAt}
+        meetingType={isRecorded ? 'RECORDED' : 'LIVE'}
+        darkMode={darkMode}
+        agenda={meeting?.agenda}
+        aiSummary={resolvedSummary}
+        timeline={liveTimeline}
+        alerts={analysis.alerts}
+        meetingStartedAt={meeting?.startedAt}
+        transcriptLines={recordedPayload?.recorded?.transcriptLines}
+        fullTranscript={recordedPayload?.audio?.transcript}
+        recordedSpeakers={recordedSpeakers}
+        focusPercent={isRecorded ? undefined : averageFocusPercent}
+        speakingPercent={isRecorded ? recordedSpeakingPercent : averageSpeakingRatePercent}
+        agendaPercent={isRecorded ? recordedAgendaPercent : averageAgendaPercent}
+      />
     </>
   );
 
