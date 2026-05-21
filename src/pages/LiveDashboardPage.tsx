@@ -11,6 +11,7 @@ import { useMeetingDetails } from '../hooks/useMeetingDetails';
 import { MeetingMetricsSection } from '../components/analysis/MeetingMetricsSection';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
 import type { FusedDataPayload } from '../types';
+import { resolveMeetingSummary } from '../utils/meetingSummary';
 import { getLatestAgendaPercent } from '../utils/timelineMetrics';
 
 export function LiveDashboardPage() {
@@ -194,7 +195,7 @@ export function LiveDashboardPage() {
       <MeetingMetricsSection
         timeline={timeline}
         agenda={meeting?.agenda ?? ''}
-        summary={analysis?.aiSummary}
+        summary={resolveMeetingSummary(analysis, null, null)}
         transcriptPanel={<LiveTranscriptPanel blocks={liveTranscriptBlocks} />}
         focusPiePercent={latestFocusRate}
         speakingPiePercent={latestSpeakingRate}

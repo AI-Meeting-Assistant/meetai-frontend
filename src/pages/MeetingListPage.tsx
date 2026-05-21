@@ -52,12 +52,16 @@ export function MeetingListPage() {
   };
 
   const handleMeetingClick = (meeting: Meeting) => {
-    if (meeting.meetingType === 'RECORDED' && meeting.status === 'IN_PROGRESS') return;
     if (meeting.status === 'IN_PROGRESS' && meeting.meetingType !== 'RECORDED' && user?.role === 'MODERATOR') {
       navigate(`/meetings/${meeting.id}/live`);
       return;
     }
     navigate(`/meetings/${meeting.id}/analysis`);
+  };
+
+  const handleUploadSuccess = (meetingId: string) => {
+    void loadMeetings();
+    navigate(`/meetings/${meetingId}/analysis`);
   };
 
   const displayed = (result?.items ?? []).filter(m =>
@@ -156,7 +160,7 @@ export function MeetingListPage() {
 
       {showUploadModal && (
         <UploadMeetingModal
-          onSuccess={() => void loadMeetings()}
+          onSuccess={handleUploadSuccess}
           onClose={() => setShowUploadModal(false)}
         />
       )}

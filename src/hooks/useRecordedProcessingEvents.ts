@@ -1,21 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import * as meetingService from '../services/meeting.service';
 import type { Meeting } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+const POLL_MS = Number(import.meta.env.VITE_RECORDED_POLL_MS) || 5000;
 
 /**
- * Subscribes to SSE for RECORDED meetings still IN_PROGRESS; refreshes when processing completes.
+ * Subscribes to SSE + polls for RECORDED meetings still IN_PROGRESS;
+ * refreshes when processing completes (SSE may be missed if no subscriber was connected).
  */
 export function useRecordedProcessingEvents(
   meetings: Meeting[],
   token: string | null,
   onRefresh: () => void,
 ): void {
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
+
+  const processingIds = meetings
+    .filter((m) => m.meetingType === 'RECORDED' && m.status === 'IN_PROGRESS')
+    .map((m) => m.id)
+    .join(',');
+
   useEffect(() => {
     const processing = meetings.filter(
       (m) => m.meetingType === 'RECORDED' && m.status === 'IN_PROGRESS',
     );
     if (!token || processing.length === 0) return;
+
+    let refreshScheduled = false;
+    const triggerRefresh = () => {
+      if (refreshScheduled) return;
+      refreshScheduled = true;
+      void Promise.resolve(onRefreshRef.current()).finally(() => {
+        refreshScheduled = false;
+      });
+    };
 
     const sources: EventSource[] = [];
 
@@ -27,7 +47,7 @@ export function useRecordedProcessingEvents(
         try {
           const parsed = JSON.parse(event.data) as { type?: string };
           if (parsed.type === 'MEETING_COMPLETED' || parsed.type === 'MEETING_FAILED') {
-            onRefresh();
+            triggerRefresh();
           }
         } catch {
           // ignore malformed
@@ -36,10 +56,27 @@ export function useRecordedProcessingEvents(
       sources.push(es);
     }
 
+    const poll = setInterval(() => {
+      void (async () => {
+        for (const meeting of processing) {
+          try {
+            const data = await meetingService.getMeetingAnalysis(meeting.id);
+            if (data.meeting.status !== 'IN_PROGRESS') {
+              triggerRefresh();
+              return;
+            }
+          } catch {
+            // ignore transient errors
+          }
+        }
+      })();
+    }, POLL_MS);
+
     return () => {
+      clearInterval(poll);
       for (const es of sources) {
         es.close();
       }
     };
-  }, [meetings, token, onRefresh]);
+  }, [processingIds, token, meetings]);
 }

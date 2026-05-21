@@ -105,6 +105,7 @@ export interface RecordedAnalysisPayload {
     speakerTalkRatioPercent?: Record<string, number> | null;
   };
   video: null;
+  context?: FusedDataPayload['context'];
   recorded: {
     durationMs: number;
     transcriptLines: RecordedTranscriptLine[];

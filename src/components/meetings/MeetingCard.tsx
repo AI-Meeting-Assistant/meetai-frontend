@@ -22,7 +22,6 @@ export function MeetingCard({ meeting, onClick }: MeetingCardProps) {
     meeting.meetingType === 'RECORDED' && meeting.status === 'IN_PROGRESS';
 
   const handleClick = () => {
-    if (isProcessingRecorded) return;
     onClick(meeting);
   };
 
@@ -31,11 +30,10 @@ export function MeetingCard({ meeting, onClick }: MeetingCardProps) {
       type="button"
       className="card-clickable"
       onClick={handleClick}
-      disabled={isProcessingRecorded}
-      title={isProcessingRecorded ? 'İşleniyor, lütfen bekleyin' : undefined}
+      title={isProcessingRecorded ? 'Processing — click to view progress' : undefined}
       style={{
         position: 'relative',
-        cursor: isProcessingRecorded ? 'not-allowed' : 'pointer',
+        cursor: 'pointer',
         opacity: isProcessingRecorded ? 0.85 : 1,
       }}
     >

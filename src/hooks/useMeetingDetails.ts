@@ -22,6 +22,16 @@ export function useMeetingDetails(id: string | null) {
     }
   }, [id]);
 
+  const refreshSilent = useCallback(async () => {
+    if (!id) return;
+    try {
+      const data = await meetingService.getMeetingAnalysis(id);
+      setAnalysis(data);
+    } catch (err) {
+      console.error('Failed to silently refresh meeting details:', err);
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchDetails();
   }, [fetchDetails]);
@@ -36,12 +46,13 @@ export function useMeetingDetails(id: string | null) {
     }
   }, [id]);
 
-  return { 
-    analysis, 
-    meeting: analysis?.meeting ?? null, 
-    isLoading, 
-    error, 
+  return {
+    analysis,
+    meeting: analysis?.meeting ?? null,
+    isLoading,
+    error,
     refresh: fetchDetails,
-    fetchTimeline
+    refreshSilent,
+    fetchTimeline,
   };
 }

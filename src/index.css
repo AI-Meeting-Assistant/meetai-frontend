@@ -732,6 +732,17 @@ textarea {
   margin-bottom: var(--space-4);
 }
 
+.analysis-metrics-recorded {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.analysis-metrics-recorded-speakers {
+  grid-column: 1 / -1;
+}
+
 .analysis-lines-stack {
   display: flex;
   flex-direction: column;
@@ -740,7 +751,8 @@ textarea {
 }
 
 @media (max-width: 768px) {
-  .analysis-metrics-2x2 {
+  .analysis-metrics-2x2,
+  .analysis-metrics-recorded {
     grid-template-columns: 1fr;
   }
 }

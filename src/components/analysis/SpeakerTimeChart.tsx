@@ -1,52 +1,67 @@
 import { useMemo } from 'react';
-import type { MeetingTimelineEntry, FusedDataPayload, RecordedAnalysisPayload } from '../../types';
+import type {
+  MeetingTimelineEntry,
+  FusedDataPayload,
+  RecordedAnalysisPayload,
+  RecordedSpeaker,
+} from '../../types';
 
 interface SpeakerTimeChartProps {
-  timeline: MeetingTimelineEntry[];
+  timeline?: MeetingTimelineEntry[];
+  recordedSpeakers?: RecordedSpeaker[];
 }
 
 type SpeakerTimePayload = Partial<FusedDataPayload> & {
   recorded?: Partial<RecordedAnalysisPayload['recorded']>;
 };
 
-export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
+export function SpeakerTimeChart({ timeline = [], recordedSpeakers }: SpeakerTimeChartProps) {
   const speakerTimes = useMemo(() => {
     const times: Record<string, number> = {};
     let totalSpeechMs = 0;
 
-    for (const entry of timeline) {
-      const payload = entry.payload as SpeakerTimePayload | null;
-      if (!payload) continue;
-
-      const recordedSpeakers = payload.recorded?.speakers;
-      if (recordedSpeakers && recordedSpeakers.length > 0) {
-        for (const sp of recordedSpeakers) {
-          if (typeof sp.talkMs === 'number' && sp.talkMs > 0) {
-            times[sp.label] = (times[sp.label] || 0) + sp.talkMs;
-            totalSpeechMs += sp.talkMs;
-          }
+    if (recordedSpeakers && recordedSpeakers.length > 0) {
+      for (const sp of recordedSpeakers) {
+        if (typeof sp.talkMs === 'number' && sp.talkMs > 0) {
+          times[sp.label] = (times[sp.label] || 0) + sp.talkMs;
+          totalSpeechMs += sp.talkMs;
         }
-        continue;
       }
+    } else {
+      for (const entry of timeline) {
+        const payload = entry.payload as SpeakerTimePayload | null;
+        if (!payload) continue;
 
-      const speakerTalkMs = payload.audio?.speakerTalkMs;
-      if (speakerTalkMs && typeof speakerTalkMs === 'object') {
-        for (const [speaker, ms] of Object.entries(speakerTalkMs)) {
-          if (typeof ms === 'number' && ms > 0) {
-            times[speaker] = (times[speaker] || 0) + ms;
-            totalSpeechMs += ms;
+        const speakersFromPayload = payload.recorded?.speakers;
+        if (speakersFromPayload && speakersFromPayload.length > 0) {
+          for (const sp of speakersFromPayload) {
+            if (typeof sp.talkMs === 'number' && sp.talkMs > 0) {
+              times[sp.label] = (times[sp.label] || 0) + sp.talkMs;
+              totalSpeechMs += sp.talkMs;
+            }
           }
+          continue;
         }
-        continue;
-      }
 
-      const speechMs = payload.audio?.vadSpeechMs || 0;
-      const speakers = (payload.audio?.speakerLabelsWindow || []) as Array<{ speaker?: string }>;
+        const speakerTalkMs = payload.audio?.speakerTalkMs;
+        if (speakerTalkMs && typeof speakerTalkMs === 'object') {
+          for (const [speaker, ms] of Object.entries(speakerTalkMs)) {
+            if (typeof ms === 'number' && ms > 0) {
+              times[speaker] = (times[speaker] || 0) + ms;
+              totalSpeechMs += ms;
+            }
+          }
+          continue;
+        }
 
-      if (speechMs > 0) {
-        const speaker = speakers.length > 0 ? (speakers[0].speaker || 'UNKNOWN') : 'UNKNOWN';
-        times[speaker] = (times[speaker] || 0) + speechMs;
-        totalSpeechMs += speechMs;
+        const speechMs = payload.audio?.vadSpeechMs || 0;
+        const speakers = (payload.audio?.speakerLabelsWindow || []) as Array<{ speaker?: string }>;
+
+        if (speechMs > 0) {
+          const speaker = speakers.length > 0 ? (speakers[0].speaker || 'UNKNOWN') : 'UNKNOWN';
+          times[speaker] = (times[speaker] || 0) + speechMs;
+          totalSpeechMs += speechMs;
+        }
       }
     }
 
@@ -55,7 +70,7 @@ export function SpeakerTimeChart({ timeline }: SpeakerTimeChartProps) {
       .map(([speaker, ms]) => ({ speaker, ms }));
 
     return { sorted, totalSpeechMs };
-  }, [timeline]);
+  }, [timeline, recordedSpeakers]);
 
   const { sorted, totalSpeechMs } = speakerTimes;
 

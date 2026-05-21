@@ -7,7 +7,7 @@ import {
 } from '../../services/media-upload.service';
 
 interface UploadMeetingModalProps {
-  onSuccess: () => void;
+  onSuccess: (meetingId: string) => void;
   onClose: () => void;
 }
 
@@ -96,8 +96,9 @@ export function UploadMeetingModal({ onSuccess, onClose }: UploadMeetingModalPro
         onProgress: setUploadPercent,
       });
 
+      const meetingId = created.id;
       meetingIdRef.current = null;
-      onSuccess();
+      onSuccess(meetingId);
       onClose();
     } catch (err) {
       await cleanupMeeting();

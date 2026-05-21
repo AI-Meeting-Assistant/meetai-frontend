@@ -1,15 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AgendaPanel } from '../components/analysis/AgendaPanel';
-import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
 import { AlertsLog } from '../components/analysis/AlertsLog';
-import { AudioDurationCard } from '../components/analysis/AudioDurationCard';
 import { ExportButton } from '../components/analysis/ExportButton';
 import { MeetingMetricsSection } from '../components/analysis/MeetingMetricsSection';
-import { SilenceRatioDonut } from '../components/analysis/SilenceRatioDonut';
-import { SpeakerTimeChart } from '../components/analysis/SpeakerTimeChart';
+import { RecordedMetricsSection } from '../components/analysis/RecordedMetricsSection';
 import { TimelineViewer } from '../components/analysis/TimelineViewer';
-import { TranscriptPanel } from '../components/analysis/TranscriptPanel';
 import { LiveTranscriptPanel } from '../components/dashboard/LiveTranscriptPanel';
 import { buildTranscriptBlocksFromTimeline } from '../utils/liveTranscript';
 import {
@@ -17,6 +12,11 @@ import {
   computeAverageFocusPercent,
   computeAverageSpeakingRatePercent,
 } from '../utils/timelineMetrics';
+import { resolveMeetingSummary } from '../utils/meetingSummary';
+import {
+  getRecordedAgendaPercent,
+  getRecordedSpeakingPercent,
+} from '../utils/recordedMetrics';
 import { PageHeader } from '../components/common/PageHeader';
 import { ConfirmDeleteMeetingModal } from '../components/meetings/ConfirmDeleteMeetingModal';
 import { EditMeetingModal } from '../components/meetings/EditMeetingModal';
@@ -38,19 +38,33 @@ export function MeetingAnalysisPage() {
     isStarting,
     isEnding,
     startError,
+    pendingSummaryMeetingId,
     receivedSummary,
+    setPendingSummaryMeetingId,
   } = useMeeting();
 
-  const { analysis, meeting, isLoading, refresh } = useMeetingDetails(id ?? null);
+  const { analysis, meeting, isLoading, refresh, refreshSilent } = useMeetingDetails(id ?? null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [summaryTimedOut, setSummaryTimedOut] = useState(false);
+
+  const isSummaryPending = pendingSummaryMeetingId === id;
+
+  useEffect(() => {
+    if (!isSummaryPending) return;
+    const timer = setTimeout(() => {
+      setPendingSummaryMeetingId(null);
+      setSummaryTimedOut(true);
+    }, 100_000);
+    return () => clearTimeout(timer);
+  }, [isSummaryPending, setPendingSummaryMeetingId]);
 
   const meetingsForSse = useMemo(
     () => (meeting ? [meeting] : []),
     [meeting],
   );
-  useRecordedProcessingEvents(meetingsForSse, token, refresh);
+  useRecordedProcessingEvents(meetingsForSse, token, refreshSilent);
 
   const isRecorded = meeting?.meetingType === 'RECORDED';
   const isProcessingRecorded = isRecorded && meeting?.status === 'IN_PROGRESS';
@@ -59,6 +73,8 @@ export function MeetingAnalysisPage() {
     const entry = analysis?.timeline?.find((t) => t.offsetMs === 0);
     return (entry?.payload ?? null) as RecordedAnalysisPayload | null;
   }, [analysis?.timeline]);
+
+  const recordedSpeakers = recordedPayload?.recorded?.speakers ?? [];
 
   const liveTranscriptBlocks = useMemo(() => {
     if (isRecorded) return [];
@@ -77,6 +93,20 @@ export function MeetingAnalysisPage() {
   const averageAgendaPercent = useMemo(
     () => computeAverageAgendaPercent(liveTimeline),
     [liveTimeline],
+  );
+
+  const recordedSpeakingPercent = useMemo(
+    () => getRecordedSpeakingPercent(recordedPayload),
+    [recordedPayload],
+  );
+  const recordedAgendaPercent = useMemo(
+    () => getRecordedAgendaPercent(recordedPayload),
+    [recordedPayload],
+  );
+
+  const resolvedSummary = useMemo(
+    () => resolveMeetingSummary(analysis, recordedPayload, receivedSummary),
+    [analysis, recordedPayload, receivedSummary],
   );
 
   const handleStartMeeting = async () => {
@@ -118,36 +148,6 @@ export function MeetingAnalysisPage() {
 
   if (isLoading || !analysis) {
     return <div className="loading">Loading analysis…</div>;
-  }
-
-  if (isProcessingRecorded) {
-    return (
-      <main className="page">
-        <PageHeader
-          onBack={() => navigate('/meetings')}
-          backLabel="Back to Meetings"
-          title={meeting?.title || 'Meeting Analysis'}
-          statusLabel={<StatusBadge status="IN_PROGRESS" />}
-        />
-        <div className="panel" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              margin: '0 auto var(--space-4)',
-              border: '3px solid var(--color-border)',
-              borderTopColor: 'var(--color-primary)',
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-            }}
-          />
-          <h3 style={{ marginTop: 0 }}>İşleniyor…</h3>
-          <p style={{ color: 'var(--color-text-muted)' }}>
-            Uploaded recording is being analyzed. This page will update automatically when complete.
-          </p>
-        </div>
-      </main>
-    );
   }
 
   const isModerator = user?.role === 'MODERATOR';
@@ -214,11 +214,6 @@ export function MeetingAnalysisPage() {
     </>
   );
 
-  const durationMs = recordedPayload?.recorded?.durationMs ?? 0;
-  const speechMs = recordedPayload?.audio?.vadSpeechMs ?? 0;
-  const silenceMs = recordedPayload?.audio?.vadSilenceMs ?? 0;
-  const speechRatio = recordedPayload?.audio?.vadSpeechRatioPercent ?? 0;
-
   return (
     <main className="page">
       <PageHeader
@@ -231,34 +226,25 @@ export function MeetingAnalysisPage() {
       />
 
       {isRecorded ? (
-        <>
-          <div className="analysis-top">
-            <AgendaPanel agenda={meeting?.agenda ?? ''} />
-            <AiSummaryPanel
-              summary={receivedSummary ?? analysis.aiSummary ?? analysis.meeting.aiSummary}
-            />
-          </div>
-          <div className="analysis-grid">
-            <AudioDurationCard durationMs={durationMs} />
-            <SilenceRatioDonut
-              speechRatioPercent={speechRatio}
-              speechMs={speechMs}
-              silenceMs={silenceMs}
-            />
-            <SpeakerTimeChart timeline={analysis.timeline ?? []} />
-          </div>
-          <div style={{ marginBottom: 'var(--space-4)' }}>
-            <TranscriptPanel
-              lines={recordedPayload?.recorded?.transcriptLines ?? []}
-              fullTranscript={recordedPayload?.audio?.transcript}
-            />
-          </div>
-        </>
+        <RecordedMetricsSection
+          agenda={meeting?.agenda ?? ''}
+          summary={resolvedSummary}
+          summaryPending={isSummaryPending}
+          summaryTimedOut={summaryTimedOut}
+          transcriptLines={recordedPayload?.recorded?.transcriptLines ?? []}
+          fullTranscript={recordedPayload?.audio?.transcript}
+          recordedSpeakers={recordedSpeakers}
+          speakingPiePercent={recordedSpeakingPercent}
+          agendaPiePercent={recordedAgendaPercent}
+          isProcessing={isProcessingRecorded}
+        />
       ) : (
         <MeetingMetricsSection
           timeline={liveTimeline}
           agenda={meeting?.agenda ?? ''}
-          summary={receivedSummary ?? analysis.aiSummary ?? analysis.meeting.aiSummary}
+          summary={resolvedSummary}
+          summaryPending={isSummaryPending}
+          summaryTimedOut={summaryTimedOut}
           transcriptPanel={<LiveTranscriptPanel blocks={liveTranscriptBlocks} />}
           focusPiePercent={averageFocusPercent}
           speakingPiePercent={averageSpeakingRatePercent}
@@ -272,9 +258,11 @@ export function MeetingAnalysisPage() {
             <AlertsLog alerts={analysis.alerts} />
           </div>
         )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <TimelineViewer entries={analysis.timeline} />
-        </div>
+        {!isRecorded && (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <TimelineViewer entries={analysis.timeline} />
+          </div>
+        )}
       </div>
 
       {showEditModal && meeting && (
