@@ -1,24 +1,11 @@
 import { useEffect, useRef } from 'react';
 import type { LiveTranscriptBlock } from '../../types';
 import { colors } from '../common/colors';
+import { formatSpeakerLabel, speakerColor } from '../common/speakerLabels';
 
 interface LiveTranscriptPanelProps {
   blocks: LiveTranscriptBlock[];
   showListening?: boolean;
-}
-
-const SPEAKER_COLORS = [
-  colors.accent,
-  colors.green,
-  colors.amber,
-  colors.purple,
-  colors.red,
-];
-
-function speakerColor(speaker: string): string {
-  let hash = 0;
-  for (let i = 0; i < speaker.length; i++) hash = speaker.charCodeAt(i) + ((hash << 5) - hash);
-  return SPEAKER_COLORS[Math.abs(hash) % SPEAKER_COLORS.length];
 }
 
 function formatOffset(ms: number): string {
@@ -70,7 +57,7 @@ export function LiveTranscriptPanel({ blocks, showListening = true }: LiveTransc
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--tx-3)', flexShrink: 0 }}>
                         {formatOffset(block.offsetMs)}
                       </span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color }}>{line.speaker}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color }}>{formatSpeakerLabel(line.speaker)}</span>
                     </div>
                     <p style={{ fontSize: 13, color: 'var(--tx-2)', margin: '0 0 4px', lineHeight: 1.55 }}>{line.text}</p>
                   </div>

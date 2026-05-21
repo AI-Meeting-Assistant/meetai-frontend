@@ -1,4 +1,5 @@
 import type { RecordedTranscriptLine } from '../../types';
+import { formatSpeakerLabel, speakerColor } from '../common/speakerLabels';
 
 interface TranscriptPanelProps {
   lines: RecordedTranscriptLine[];
@@ -23,17 +24,25 @@ export function TranscriptPanel({ lines, fullTranscript }: TranscriptPanelProps)
         style={{ flex: 1, overflowY: 'auto', maxHeight: 360, display: 'flex', flexDirection: 'column', gap: 0 }}
       >
         {hasLines ? (
-          lines.map((line, i) => (
-            <div key={`${line.startMs}-${i}`} style={{ padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-              <div style={{
-                fontSize: 11, fontWeight: 600, color: 'var(--tx-3)',
-                fontFamily: 'var(--font-mono)', marginBottom: 4, letterSpacing: '0.04em',
-              }}>
-                {line.speaker} · {formatTimestamp(line.startMs)}–{formatTimestamp(line.endMs)}
+          lines.map((line, i) => {
+            const color = speakerColor(line.speaker);
+            return (
+              <div key={`${line.startMs}-${i}`} style={{ padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 4 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, color,
+                    fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
+                  }}>
+                    {formatSpeakerLabel(line.speaker)}
+                  </span>
+                  <span style={{ fontSize: 10, color: 'var(--tx-3)', fontFamily: 'var(--font-mono)' }}>
+                    {formatTimestamp(line.startMs)}–{formatTimestamp(line.endMs)}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--tx-2)', lineHeight: 1.65 }}>{line.text}</p>
               </div>
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--tx-2)', lineHeight: 1.65 }}>{line.text}</p>
-            </div>
-          ))
+            );
+          })
         ) : fullTranscript ? (
           <p style={{ margin: 0, fontSize: 13, color: 'var(--tx-2)', whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{fullTranscript}</p>
         ) : (

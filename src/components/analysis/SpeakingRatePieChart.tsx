@@ -1,4 +1,4 @@
-import { speakingRateColor } from '../common/colors';
+import { metricColors } from '../common/colors';
 
 interface SpeakingRatePieChartProps {
   speakingRate: number;
@@ -20,9 +20,9 @@ export function SpeakingRatePieChart({ speakingRate, size = 160 }: SpeakingRateP
       <div style={{ position: 'relative', width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={speakingRateColor(clamped)} strokeWidth={stroke}
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={metricColors.speaking} strokeWidth={stroke}
             strokeDasharray={cir} strokeDashoffset={offset} strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.6s ease' }} />
+            style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: size / 5.5, fontWeight: 600, color: 'var(--tx-1)' }}>
