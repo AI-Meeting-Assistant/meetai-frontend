@@ -1,9 +1,24 @@
 import type { MeetingAlert } from '../../types';
 import { alertSeverityStyle } from '../common/colors';
+import { eventTypeLabel } from '../common/alertLabels';
 
-const severityStyle = alertSeverityStyle;
+function formatMeetingOffset(createdAt: string, startedAt: string): string {
+  const ms = new Date(createdAt).getTime() - new Date(startedAt).getTime();
+  if (ms < 0) return '0:00';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
-export function AlertsLog({ alerts }: { alerts: MeetingAlert[] }) {
+interface AlertsLogProps {
+  alerts: MeetingAlert[];
+  meetingStartedAt?: string | null;
+}
+
+export function AlertsLog({ alerts, meetingStartedAt }: AlertsLogProps) {
   return (
     <div className="card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -20,21 +35,32 @@ export function AlertsLog({ alerts }: { alerts: MeetingAlert[] }) {
       ) : (
         <div style={{ maxHeight: 480, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {alerts.map((alert) => {
-            const s = severityStyle(alert.severity);
+            const s = alertSeverityStyle(alert.severity);
+            const time = meetingStartedAt
+              ? formatMeetingOffset(alert.createdAt, meetingStartedAt)
+              : new Date(alert.createdAt).toLocaleTimeString();
+
             return (
               <div key={alert.id} style={{
-                padding: '10px 12px', background: s.bg,
-                border: `1px solid ${s.border}`, borderLeftWidth: 3,
-                borderRadius: 'var(--r-md)', animation: 'fadeSlideIn 0.2s ease',
+                padding: '10px 12px',
+                background: s.bg,
+                border: `1px solid ${s.border}`,
+                borderLeftWidth: 4,
+                borderRadius: 'var(--r-md)',
               }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-1)', marginBottom: 2 }}>
-                  {alert.eventType}
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: s.accent,
+                  letterSpacing: '0.04em', marginBottom: 4,
+                }}>
+                  {eventTypeLabel(alert.eventType)}
                 </div>
                 {alert.message && (
-                  <div style={{ fontSize: 12, color: 'var(--tx-2)', marginBottom: 2 }}>{alert.message}</div>
+                  <div style={{ fontSize: 12, color: 'var(--tx-1)', marginBottom: 4, lineHeight: 1.5 }}>
+                    {alert.message}
+                  </div>
                 )}
                 <div style={{ fontSize: 10, color: 'var(--tx-3)', fontFamily: 'var(--font-mono)' }}>
-                  {alert.severity} · {new Date(alert.createdAt).toLocaleTimeString()}
+                  {alert.severity} · {meetingStartedAt ? `${time} into meeting` : time}
                 </div>
               </div>
             );

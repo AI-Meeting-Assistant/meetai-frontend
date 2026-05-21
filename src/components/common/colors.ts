@@ -51,10 +51,12 @@ export function agendaColor(pct: number): string {
 
 // ── Alert severity ────────────────────────────────────────────────────────────
 
-export function alertSeverityStyle(severity: string): { bg: string; border: string } {
+interface AlertStyle { bg: string; border: string; accent: string; }
+
+export function alertSeverityStyle(severity: string): AlertStyle {
   switch (severity.toUpperCase()) {
-    case 'HIGH':   return { bg: colors.redBg,   border: colors.red };
-    case 'MEDIUM': return { bg: colors.amberBg, border: colors.amber };
-    default:       return { bg: 'var(--bg-subtle)', border: 'var(--tx-3)' };
+    case 'HIGH':   return { bg: colors.redBg,   border: colors.red,   accent: colors.red };
+    case 'MEDIUM': return { bg: colors.amberBg, border: colors.amber, accent: colors.amber };
+    default:       return { bg: colors.greenBg, border: colors.green, accent: colors.green };
   }
 }

@@ -1,17 +1,9 @@
 import type { LiveAlert } from '../../types';
-import { colors } from '../common/colors';
+import { colors, alertSeverityStyle } from '../common/colors';
+import { eventTypeLabel } from '../common/alertLabels';
 
-const ALERT_LABELS: Record<LiveAlert['type'], string> = {
-  FOCUS_DROP:              'Focus dropped below threshold',
-  FOCUS_RECOVERED:         'Focus recovered',
-  SPEAKING_RATE_DROP:      'Speaking rate dropped below threshold',
-  SPEAKING_RATE_RECOVERED: 'Speaking rate recovered',
-  AGENDA_DEVIATION:        'Meeting is deviating from the agenda',
-  AGENDA_FIT:              'Meeting is on track with the agenda',
-};
-
-function severityOf(type: LiveAlert['type']): 'warning' | 'info' {
-  return type.endsWith('_DROP') || type === 'AGENDA_DEVIATION' ? 'warning' : 'info';
+function severityOf(type: LiveAlert['type']): string {
+  return type.endsWith('_DROP') || type === 'AGENDA_DEVIATION' ? 'HIGH' : 'LOW';
 }
 
 function formatDetail(alert: LiveAlert): string {
@@ -49,19 +41,20 @@ export function AlertFeed({ alerts }: { alerts: LiveAlert[] }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {alerts.map((alert) => {
-            const isWarning = severityOf(alert.type) === 'warning';
+            const severity = severityOf(alert.type);
+            const s = alertSeverityStyle(severity);
             const detail = formatDetail(alert);
             return (
               <div key={`${alert.type}-${alert.offsetMs}`} style={{
                 padding: '9px 11px',
-                background: isWarning ? colors.amberBg : colors.accentSubtle,
-                border: `1px solid ${isWarning ? colors.amber : colors.accentBorder}`,
-                borderLeftWidth: 3,
+                background: s.bg,
+                border: `1px solid ${s.border}`,
+                borderLeftWidth: 4,
                 borderRadius: 'var(--r-md)',
                 animation: 'fadeSlideIn 0.2s ease',
               }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-1)', marginBottom: 2 }}>
-                  {ALERT_LABELS[alert.type]}
+                <div style={{ fontSize: 11, fontWeight: 700, color: s.accent, letterSpacing: '0.04em', marginBottom: detail ? 4 : 0 }}>
+                  {eventTypeLabel(alert.type)}
                 </div>
                 {detail && (
                   <div style={{ fontSize: 10, color: 'var(--tx-3)', fontFamily: 'var(--font-mono)' }}>

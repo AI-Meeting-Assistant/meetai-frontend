@@ -325,7 +325,7 @@ export function MeetingAnalysisPage() {
 
           {/* Alerts + Timeline */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 12, marginTop: 16 }}>
-            <AlertsLog alerts={analysis.alerts} />
+            <AlertsLog alerts={analysis.alerts} meetingStartedAt={meeting?.startedAt} />
             <TimelineViewer entries={analysis.timeline} />
           </div>
         </>
