@@ -18,6 +18,7 @@ export function AgendaAdherenceLevelChart({ timeline }: { timeline: MeetingTimel
       color={metricColors.agenda}
       avg={avg > 0 ? avg : null}
       emptyLabel="No agenda adherence data yet."
+      yTicks={[20, 40, 65, 90]}
     />
   );
 }
