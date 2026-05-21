@@ -394,6 +394,41 @@ textarea {
   color: #475569;
 }
 
+/* ─── AI Summary Markdown ────────────────────────────────────────────────── */
+.ai-summary-body {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.ai-summary-body p {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text);
+}
+
+.ai-summary-body p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-summary-body strong {
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.ai-summary-body ul {
+  margin: var(--space-1) 0 var(--space-3) var(--space-5);
+  padding: 0;
+}
+
+.ai-summary-body ul:last-child {
+  margin-bottom: 0;
+}
+
+.ai-summary-body li {
+  margin-bottom: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
 /* ─── Panels ─────────────────────────────────────────────────────────────── */
 .panel {
   background: var(--color-surface);

@@ -1,3 +1,5 @@
+import ReactMarkdown from 'react-markdown';
+
 interface AiSummaryPanelProps {
   summary: string | null | undefined;
   isPending?: boolean;
@@ -20,10 +22,17 @@ export function AiSummaryPanel({ summary, isPending, timedOut }: AiSummaryPanelP
         </p>
       );
     }
+    if (!summary) {
+      return (
+        <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontStyle: 'italic', color: 'var(--color-text-muted)' }}>
+          Summary not yet generated.
+        </p>
+      );
+    }
     return (
-      <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontStyle: summary ? 'normal' : 'italic' }}>
-        {summary ?? 'Summary not yet generated.'}
-      </p>
+      <div className="ai-summary-body">
+        <ReactMarkdown>{summary}</ReactMarkdown>
+      </div>
     );
   };
 

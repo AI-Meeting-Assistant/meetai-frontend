@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AgendaPanel } from '../components/analysis/AgendaPanel';
 import { AiSummaryPanel } from '../components/analysis/AiSummaryPanel';
@@ -38,27 +38,13 @@ export function MeetingAnalysisPage() {
     isStarting,
     isEnding,
     startError,
-    pendingSummaryMeetingId,
     receivedSummary,
-    setPendingSummaryMeetingId,
   } = useMeeting();
 
   const { analysis, meeting, isLoading, refresh } = useMeetingDetails(id ?? null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [summaryTimedOut, setSummaryTimedOut] = useState(false);
-
-  const isSummaryPending = pendingSummaryMeetingId === id;
-
-  useEffect(() => {
-    if (!isSummaryPending) return;
-    const timer = setTimeout(() => {
-      setPendingSummaryMeetingId(null);
-      setSummaryTimedOut(true);
-    }, 100_000);
-    return () => clearTimeout(timer);
-  }, [isSummaryPending, setPendingSummaryMeetingId]);
 
   const meetingsForSse = useMemo(
     () => (meeting ? [meeting] : []),
@@ -249,9 +235,7 @@ export function MeetingAnalysisPage() {
           <div className="analysis-top">
             <AgendaPanel agenda={meeting?.agenda ?? ''} />
             <AiSummaryPanel
-              summary={receivedSummary ?? analysis.aiSummary}
-              isPending={isSummaryPending}
-              timedOut={summaryTimedOut}
+              summary={receivedSummary ?? analysis.aiSummary ?? analysis.meeting.aiSummary}
             />
           </div>
           <div className="analysis-grid">
@@ -274,9 +258,7 @@ export function MeetingAnalysisPage() {
         <MeetingMetricsSection
           timeline={liveTimeline}
           agenda={meeting?.agenda ?? ''}
-          summary={receivedSummary ?? analysis.aiSummary}
-          summaryPending={isSummaryPending}
-          summaryTimedOut={summaryTimedOut}
+          summary={receivedSummary ?? analysis.aiSummary ?? analysis.meeting.aiSummary}
           transcriptPanel={<LiveTranscriptPanel blocks={liveTranscriptBlocks} />}
           focusPiePercent={averageFocusPercent}
           speakingPiePercent={averageSpeakingRatePercent}
