@@ -9,6 +9,7 @@ import { FocusPieChart } from './FocusPieChart';
 import { SpeakerTimeChart } from './SpeakerTimeChart';
 import { SpeakingRateLevelChart } from './SpeakingRateLevelChart';
 import { SpeakingRatePieChart } from './SpeakingRatePieChart';
+import { ParticipantStatsPanel } from './ParticipantStatsPanel';
 
 interface MeetingMetricsSectionProps {
   timeline: MeetingTimelineEntry[];
@@ -50,6 +51,10 @@ export function MeetingMetricsSection({
         <FocusPieChart focusRate={focusPiePercent} />
         <SpeakerTimeChart timeline={timeline} />
         <AgendaAdherencePieChart adherencePercent={agendaPiePercent} />
+      </div>
+
+      <div style={{ marginBottom: 'var(--space-4)' }}>
+        <ParticipantStatsPanel timeline={timeline} />
       </div>
 
       <div className="analysis-lines-stack">
