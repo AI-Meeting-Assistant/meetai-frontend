@@ -23,6 +23,7 @@ import { EditMeetingModal } from '../components/meetings/EditMeetingModal';
 import { StatusBadge } from '../components/meetings/StatusBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useMeeting } from '../contexts/MeetingContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useMeetingDetails } from '../hooks/useMeetingDetails';
 import { useRecordedProcessingEvents } from '../hooks/useRecordedProcessingEvents';
 import * as meetingService from '../services/meeting.service';
@@ -152,6 +153,7 @@ export function MeetingAnalysisPage() {
   } = useMeeting();
 
   const { analysis, meeting, isLoading, refresh, refreshSilent } = useMeetingDetails(id ?? null);
+  const { darkMode } = useTheme();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
