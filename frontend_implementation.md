@@ -325,6 +325,60 @@ Python ingest base URL: `http://localhost:8000` (store as `VITE_PYTHON_INGEST_BA
 - Ticket refresh ownership is Node backend (not frontend, not Python).
 - Refresh cadence sweet spot: every `300` seconds (5 minutes), Node refreshes TTL to `18000` via `EXPIRE`.
 
+## Test Coverage
+
+**Run:** `npm test` (Vitest + jsdom) · **Config:** `vitest.config.ts`, `tests/setup.ts`  
+**Full RAD/SDD map:** [`../docs/TEST_TRACEABILITY.md`](../docs/TEST_TRACEABILITY.md) · **E2E smoke (manual):** [`../tests/e2e/smoke.md`](../tests/e2e/smoke.md)
+
+### Test layout
+
+```
+tests/unit/
+├── timelineMetrics.test.ts   # Dashboard aggregates
+├── liveTranscript.test.ts    # Transcript parsing
+├── recordedMetrics.test.ts   # Offline analysis metrics
+├── media-upload.test.ts      # Recorded file validation + error types
+└── router.guards.test.tsx      # Auth/moderator gate rules (logic only)
+```
+
+### Covered (automated)
+
+| Area | Test file | What is verified |
+|------|-----------|------------------|
+| Dashboard metrics | `timelineMetrics.test.ts` | Avg focus, speaking rate, agenda % from timeline payload |
+| Transcript UI data | `liveTranscript.test.ts` | `transcriptLines` vs flat string; timeline blocks |
+| Recorded report | `recordedMetrics.test.ts` | Agenda/speaking % from batch payload shape |
+| Upload validation | `media-upload.test.ts` | Extension, empty file, 500MB limit; `StreamUnauthorized` / `StreamBadRequest` |
+| Route guards | `router.guards.test.tsx` | MODERATOR vs unauthenticated rules (no full router render) |
+
+### Not covered yet (and why)
+
+| Area | UI / module | Short reason |
+|------|-------------|--------------|
+| UC-01 create flow | `CreateMeetingModal`, permissions | Needs RTL + `AuthContext` + API mock — not written |
+| UC-03 live alerts | `LiveAlerts`, `useSSE`, `AlertFeed` | SSE/EventSource mock suite missing |
+| UC-04 analysis page | `MeetingAnalysisPage`, charts | No fixture render tests |
+| UC-05 PDF export | `ExportButton`, Electron IPC | `meetaiDesktop` / puppeteer — desktop-only |
+| UC-06 history | `MeetingListPage`, delete modal | Empty-state component test missing |
+| UC-07 upload modal | `UploadMeetingModal` | Only `validateRecordedFile` tested, not modal UX |
+| Media capture | `useMediaStream`, `face-canvas-pipeline` | Browser APIs; manual smoke |
+| Live dashboard | `LiveDashboardPage` | Full page + ingest loop not automated |
+| Services | `api.ts`, `meeting.service.ts` | Fetch wrapper / CRUD not unit-tested |
+| E2E | — | See root `tests/e2e/smoke.md` |
+
+### RAD quick status
+
+| UC | Auto | Notes |
+|----|------|-------|
+| UC-01 | Partial | File validation only; no modal flow |
+| UC-03 | No | Manual smoke |
+| UC-04 | Partial | Metrics utils only |
+| UC-05 | No | Electron export |
+| UC-06 | No | — |
+| UC-07 | Partial | `validateRecordedFile` only |
+
+---
+
 ## Application Development Standards (Our Rules)
 
 4.1. Global Error Handling & Interception (Mirrors Backend 4.1)
