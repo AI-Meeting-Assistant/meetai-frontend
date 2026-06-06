@@ -6,7 +6,7 @@ import * as meetingService from '../services/meeting.service';
 import { clearDesktopNotifications } from '../services/desktopNotifications';
 import { extractTranscriptLines } from '../utils/liveTranscript';
 
-const DEFAULT_TIMELINE_RESOLUTION_MS = 2000;
+const DEFAULT_TIMELINE_RESOLUTION_MS = 6000;
 const MAX_LIVE_TRANSCRIPT_BLOCKS = 300;
 
 function getElapsedOffsetMs(startedAt: string | null | undefined, resolutionMs: number): number {

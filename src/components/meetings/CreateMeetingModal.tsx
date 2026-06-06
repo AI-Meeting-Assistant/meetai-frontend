@@ -1,23 +1,17 @@
 import { useEffect, useState } from 'react';
 import { SlideOver } from '../common/SlideOver';
 
+const LIVE_TIMELINE_RESOLUTION_MS = 6000;
+
 interface CreateMeetingModalProps {
   open: boolean;
   onCreate: (title: string, agenda?: string, timelineResolutionMs?: number) => Promise<void>;
   onClose: () => void;
 }
 
-const RESOLUTION_OPTIONS = [
-  { value: '2000',  label: '2 seconds' },
-  { value: '4000',  label: '4 seconds' },
-  { value: '6000',  label: '6 seconds (recommended)' },
-  { value: '10000', label: '10 seconds' },
-];
-
 export function CreateMeetingModal({ open, onCreate, onClose }: CreateMeetingModalProps) {
   const [title, setTitle]           = useState('');
   const [agenda, setAgenda]         = useState('');
-  const [resolution, setResolution] = useState('6000');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
@@ -26,7 +20,6 @@ export function CreateMeetingModal({ open, onCreate, onClose }: CreateMeetingMod
     if (open) {
       setTitle('');
       setAgenda('');
-      setResolution('6000');
       setSubmitting(false);
       setError(null);
     }
@@ -38,7 +31,7 @@ export function CreateMeetingModal({ open, onCreate, onClose }: CreateMeetingMod
     setError(null);
     setSubmitting(true);
     try {
-      await onCreate(title.trim(), agenda.trim() || undefined, Number(resolution));
+      await onCreate(title.trim(), agenda.trim() || undefined, LIVE_TIMELINE_RESOLUTION_MS);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create meeting');
@@ -74,17 +67,6 @@ export function CreateMeetingModal({ open, onCreate, onClose }: CreateMeetingMod
           <label htmlFor="cm-agenda" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-2)' }}>Agenda</label>
           <textarea id="cm-agenda" rows={5} placeholder="Topics to cover…"
             value={agenda} onChange={e => setAgenda(e.target.value)} style={{ resize: 'vertical' }} />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <label htmlFor="cm-resolution" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx-2)' }}>
-            Snapshot interval
-          </label>
-          <select id="cm-resolution" value={resolution} onChange={e => setResolution(e.target.value)}>
-            {RESOLUTION_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
         </div>
 
         <div style={{
