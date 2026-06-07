@@ -1,5 +1,4 @@
 export async function loadFaceModel(): Promise<void> {
-  // no-op — model loading not required for JPEG capture pipeline
 }
 
 /**
