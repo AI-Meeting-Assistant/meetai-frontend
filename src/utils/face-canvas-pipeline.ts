@@ -1,6 +1,3 @@
-export async function loadFaceModel(): Promise<void> {
-}
-
 /**
  * Captures JPEG frames from a video track at ~10fps.
  *
@@ -54,7 +51,6 @@ export function startJpegCapture(
       stopped = true;
       clearInterval(intervalId);
       frames = [];
-      console.log('[JpegCapture] Stopped.');
     },
   };
 }

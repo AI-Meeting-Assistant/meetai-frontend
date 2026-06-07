@@ -24,24 +24,10 @@ The packaged output and installer will be located in the `release/<version>/` di
 
 ---
 
-## Testing the Media Pipe
+## Tests
 
-A Python script is provided to simulate the ingestion backend and verify that screen/audio capture is working correctly.
-
-### 1. Requirements
-Install the required Python packages:
 ```bash
-pip install fastapi uvicorn python-multipart
+npm test
 ```
 
-### 2. Run the Test Server
-```bash
-python test_media_server.py
-```
-The server starts at `http://localhost:8000`.
-
-### 3. Chunk Storage
-When you start a meeting and select a screen to share, the app will send 2-second media chunks to this server.
-- **Storage Path:** `./received_chunks/`
-- **Filename:** `meeting_{id}.webm`
-- Chunks are appended to the file in real-time, allowing you to play the resulting video after ending the meeting.
+PDF export is generated client-side in the Electron main process (`window.meetai.exportPdf`); no backend export endpoint is used.

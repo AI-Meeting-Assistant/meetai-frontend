@@ -146,8 +146,7 @@ Base `fetch` wrapper:
   → `GET /api/v1/meetings/:id`
 - `updateStatus(id, status): Promise<{ meeting: Meeting; streamTicket?: string; ticketExpiresAt?: string }>`
   → `PATCH /api/v1/meetings/:id`
-- `exportReport(id, format): Promise<string>`
-  → `GET /api/v1/meetings/:id/export?format=pdf`
+- PDF export: `ExportButton` → `window.meetai.exportPdf` (Electron main process; client-side only)
 
 ### `services/sse.service.ts`
 - `connectAlertsStream(meetingId, token): EventSource`
@@ -185,7 +184,7 @@ useMediaStream()
   2. getUserMedia({ audio: true })                             → moderator mic
   3. AudioContext: merge system audio + mic into one destination stream
   4. **Dual `MediaRecorder`**: video-only stream (VP9/VP8 WebM) + merged-audio stream (Opus WebM/Ogg)
-  5. Each recorder uses **`start(2000)` timeslice** (same as `MEDIA_CHUNK_DURATION_MS`) so each `ondataavailable` Blob is typically a **standalone** WebM segment decodable by PyAV on the gateway
+  5. Each recorder uses **`start(6000)` timeslice** (same as `MEDIA_CHUNK_DURATION_MS` / `timelineResolutionMs`) so each `ondataavailable` Blob is typically a **standalone** WebM segment decodable by PyAV on the gateway
   6. Pair video + audio blobs per `offsetMs` → `uploadChunk` POST (`videoChunk`, `audioChunk`) to Python ingest
   - Returns { start(meetingId, streamTicket), stop(), isCapturing: boolean, streamError: string | null }
 ```
@@ -242,7 +241,7 @@ When a meeting card is clicked:
 - `TimelineViewer`: list of timeline entries (offsetMs + raw payload JSON for now, charts deferred)
 - `AlertsLog`: full alerts list with severity + eventType + createdAt
 - `AiSummaryPanel`: shows `aiSummary` text, or "Summary not yet generated" if null
-- `ExportButton`: deferred to next phase (activate after real PDF export is finalized)
+- `ExportButton`: Electron IPC PDF export via `window.meetai.exportPdf`
 
 ### SettingsPage
 - Placeholder page for Phase 4+
@@ -266,7 +265,7 @@ When a meeting card is clicked:
 13. **`useMediaStream`** hook — screen capture + merged mic/system audio + dual `MediaRecorder` with **2s timeslice** + paired HTTP upload to Python ingest
 14. **SettingsPage** — placeholder
 15. **Electron wiring** — `main.ts` creates `BrowserWindow`, loads the Vite dev server in dev mode
-16. **ExportButton** — enable when backend real PDF export is ready
+16. **ExportButton** — Electron client-side PDF via `exportPdf` IPC
 
 ---
 

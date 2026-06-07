@@ -121,8 +121,3 @@ export async function deleteMeeting(id: string): Promise<void> {
     method: 'DELETE',
   });
 }
-
-export async function exportReport(id: string, format: 'pdf'): Promise<string> {
-  const data = await apiRequest<{ url: string }>(`/meetings/${id}/export?format=${format}`);
-  return data.url;
-}
